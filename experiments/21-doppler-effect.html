@@ -1,0 +1,961 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多普勒效应可视化演示</title>
+    <style>
+        /* 全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .back-btn{
+  color:var(--text2);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:6px;
+  transition:all .2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 99;
+}
+.back-btn:hover{
+  color:var(--text);
+  background:var(--bg3);
+}
+.back-btn::before{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(45deg);
+}
+
+        /* 标题栏 */
+        header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 100, 200, 0.15);
+            border-bottom: 2px solid rgba(0, 150, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 100, 200, 0.2);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: #00d4ff;
+            text-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
+            letter-spacing: 2px;
+        }
+
+        /* 主容器 */
+        .container {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            min-height: calc(100vh - 200px);
+        }
+
+        /* 左侧控制面板 */
+        .control-panel {
+            width: 30%;
+            background: rgba(20, 30, 60, 0.8);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            box-shadow: 0 8px 30px rgba(0, 50, 150, 0.3);
+        }
+
+        .panel-title {
+            font-size: 1.3rem;
+            color: #00d4ff;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 200, 255, 0.3);
+        }
+
+        /* 滑块组 */
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            color: #a0c4ff;
+        }
+
+        .slider-value {
+            float: right;
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(to right, #0066cc, #00d4ff);
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            width: 18px;
+            height: 18px;
+            background: #00d4ff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+        }
+
+        /* 按钮组 */
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0066cc, #00aaff);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #0077dd, #00bbff);
+            box-shadow: 0 4px 15px rgba(0, 150, 255, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ff6600, #ff8800);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #ff7700, #ff9900);
+        }
+
+        .btn-direction {
+            background: linear-gradient(135deg, #00aa66, #00cc88);
+            color: white;
+        }
+
+        .btn-direction:hover {
+            background: linear-gradient(135deg, #00bb77, #00dd99);
+        }
+
+        /* 数据面板 */
+        .data-panel {
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(0, 50, 100, 0.3);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 200, 255, 0.2);
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 150, 255, 0.1);
+        }
+
+        .data-item:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            color: #80b0e0;
+        }
+
+        .data-value {
+            color: #00ffcc;
+            font-weight: bold;
+            font-family: 'Consolas', monospace;
+        }
+
+        /* 右侧动画区 */
+        .canvas-container {
+            width: 70%;
+            background: rgba(10, 15, 30, 0.6);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            box-shadow: 0 8px 30px rgba(0, 50, 150, 0.3);
+            padding: 15px;
+            position: relative;
+        }
+
+        canvas {
+            width: 100%;
+            height: 700px;
+            background: #050810;
+            border-radius: 8px;
+            cursor: crosshair;
+        }
+
+        canvas.dragging {
+            cursor: grabbing;
+        }
+
+        .canvas-hint {
+            position: absolute;
+            bottom: 25px;
+            right: 25px;
+            background: rgba(0, 100, 200, 0.3);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #80b0e0;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+        }
+
+        /* 公式区 */
+        .formula-section {
+            padding: 30px;
+            background: rgba(20, 30, 60, 0.6);
+            margin: 0 20px 20px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 150, 255, 0.3);
+        }
+
+        .formula-section h2 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+
+        .formula-box {
+            background: rgba(0, 50, 100, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 1.2rem;
+            text-align: center;
+            border: 1px solid rgba(0, 200, 255, 0.2);
+        }
+
+        .formula {
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            color: #00ffcc;
+            font-size: 1.4rem;
+            margin: 10px 0;
+        }
+
+        .explanation {
+            line-height: 1.8;
+            color: #a0c4ff;
+            font-size: 0.95rem;
+        }
+
+        .explanation strong {
+            color: #00d4ff;
+        }
+    </style>
+</head>
+<body>
+    <!-- 标题栏 -->
+    <header>
+        <h1>多普勒效应可视化演示</h1>
+    </header>
+
+    <!-- 主容器 -->
+    <div class="container">
+      <a href="../index.html" class="back-btn">返回</a>
+        <!-- 左侧控制面板 -->
+        <div class="control-panel">
+            <h2 class="panel-title">控制面板</h2>
+            
+            <!-- 滑块控制 -->
+            <div class="slider-group">
+                <label>波源速度 vₛ: <span class="slider-value" id="sourceSpeedValue">150 m/s</span></label>
+                <input type="range" id="sourceSpeed" min="0" max="300" value="150" step="10">
+            </div>
+
+            <div class="slider-group">
+                <label>原始频率 f₀: <span class="slider-value" id="sourceFreqValue">440 Hz</span></label>
+                <input type="range" id="sourceFreq" min="20" max="2000" value="440" step="10">
+            </div>
+
+            <div class="slider-group">
+                <label>声速 v: <span class="slider-value" id="soundSpeedValue">340 m/s</span></label>
+                <input type="range" id="soundSpeed" min="300" max="350" value="340" step="5">
+            </div>
+
+            <div class="slider-group">
+                <label>播放倍速: <span class="slider-value" id="playbackSpeedValue">1.0x</span></label>
+                <input type="range" id="playbackSpeed" min="0.01" max="5" value="1" step="0.01">
+            </div>
+
+            <!-- 按钮组 -->
+            <div class="button-group">
+                <button class="btn btn-primary" id="playPauseBtn">开始</button>
+                <button class="btn btn-warning" id="resetBtn">重置</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-direction" id="directionLeft">向左运动</button>
+                <button class="btn btn-direction" id="directionRight">向右运动</button>
+            </div>
+
+            <!-- 实时数据面板 -->
+            <div class="data-panel">
+                <h3 style="color: #00d4ff; margin-bottom: 10px;">实时数据</h3>
+                <div class="data-item">
+                    <span class="data-label">波源速度 vₛ</span>
+                    <span class="data-value" id="dataSourceSpeed">150 m/s</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">声速 v</span>
+                    <span class="data-value" id="dataSoundSpeed">340 m/s</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">原始频率 f₀</span>
+                    <span class="data-value" id="dataSourceFreq">440 Hz</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">接收频率 f'</span>
+                    <span class="data-value" id="dataRecvFreq">788 Hz</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">原始波长 λ</span>
+                    <span class="data-value" id="dataWavelength">0.77 m</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">周期 T</span>
+                    <span class="data-value" id="dataPeriod">2.27 ms</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧动画区 -->
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+            <div class="canvas-hint">💡 提示：可拖拽波源调整位置</div>
+        </div>
+    </div>
+
+    <!-- 公式说明区 -->
+    <div class="formula-section">
+        <h2>物理公式</h2>
+        <p class="explanation">
+            <strong>多普勒效应</strong>是指当波源和观察者之间存在相对运动时，观察者接收到的波的频率会发生变化的现象。
+            当波源靠近观察者时，接收频率升高；当波源远离观察者时，接收频率降低。
+        </p>
+        
+        <div class="formula-box">
+            <p>多普勒效应公式（波源运动，观察者静止）：</p>
+            <div class="formula">
+                f' = f₀ × v / (v ∓ vₛ)
+            </div>
+            <p style="margin-top: 15px;">
+                <strong>波源靠近观察者</strong>：分母用 <strong>减号</strong>，即 f' = f₀ × v / (v - vₛ)<br>
+                <strong>波源远离观察者</strong>：分母用 <strong>加号</strong>，即 f' = f₀ × v / (v + vₛ)
+            </p>
+        </div>
+
+        <p class="explanation">
+            <strong>符号说明：</strong><br>
+            • f'：观察者接收到的频率（Hz）<br>
+            • f₀：波源原始频率（Hz）<br>
+            • v：声波在介质中的传播速度（m/s）<br>
+            • vₛ：波源的运动速度（m/s）<br><br>
+            
+            <strong>教学提示：</strong><br>
+            1. 当波源向观察者运动时，波前在前方被"挤压"，波长变短，频率变高<br>
+            2. 当波源远离观察者运动时，波前在后方被"拉伸"，波长变长，频率变低<br>
+            3. 当波源速度等于声速时（vₛ = v），会产生音爆现象（激波）<br>
+            4. 生活中常见的例子：救护车驶过时警笛音调的变化
+        </p>
+    </div>
+
+    <script>
+        // ========== 全局变量与配置 ==========
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 设置Canvas实际尺寸
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth - 30;
+            canvas.height = 700;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // 物理参数
+        let params = {
+            sourceSpeed: 150,      // 波源速度 vₛ (m/s)
+            sourceFreq: 440,       // 原始频率 f₀ (Hz)
+            soundSpeed: 340,       // 声速 v (m/s)
+            playbackSpeed: 1.0,    // 播放倍速
+        };
+
+        // 动画状态
+        let state = {
+            isPlaying: false,      // 是否播放
+            direction: 1,          // 运动方向：1向右，-1向左
+            sourceX: 0,            // 波源当前位置（像素）
+            sourceY: 250,          // 波源Y坐标（固定）
+            waveFronts: [],        // 波前数组 [{x, y, radius, birthTime}]
+            lastEmitTime: 0,       // 上次发射波的时间
+            animationTime: 0,      // 动画时间（秒）
+            observerX: 0,          // 观察者位置
+            pixelScale: 1,         // 像素与实际距离的比例（1像素 = ? 米）
+            isDragging: false,     // 是否正在拖拽波源
+            dragVelocity: 0,       // 拖拽速度（像素/秒）
+            lastDragTime: 0,       // 上次拖拽时间戳
+            lastDragX: 0,          // 上次拖拽位置
+        };
+
+        // ========== 初始化 ==========
+        function init() {
+            state.sourceX = canvas.width / 2;
+            state.sourceY = canvas.height / 2;
+            state.observerX = canvas.width * 0.8; // 观察者在右侧
+            state.waveFronts = [];
+            state.lastEmitTime = 0;
+            state.animationTime = 0;
+            
+            // 计算像素比例：Canvas宽度对应约50米
+            state.pixelScale = canvas.width / 50;
+            
+            updateDataPanel();
+        }
+
+        // ========== 物理计算 ==========
+        /**
+         * 计算观察者接收频率
+         * 公式：f' = f₀ × v / (v ∓ vₛ)
+         * 靠近用减号，远离用加号
+         */
+        function calculateReceivedFreq() {
+            const effectiveSpeed = getEffectiveSpeed();
+            const effectiveDirection = getEffectiveDirection();
+            const { sourceFreq, soundSpeed } = params;
+            
+            // 判断波源运动方向与观察者位置关系
+            const movingTowardsObserver = (effectiveDirection === 1 && state.sourceX < state.observerX) ||
+                                         (effectiveDirection === -1 && state.sourceX > state.observerX);
+            
+            let receivedFreq;
+            if (movingTowardsObserver) {
+                receivedFreq = sourceFreq * soundSpeed / (soundSpeed - effectiveSpeed);
+            } else {
+                receivedFreq = sourceFreq * soundSpeed / (soundSpeed + effectiveSpeed);
+            }
+            
+            return receivedFreq;
+        }
+
+        // 计算原始波长 λ = v / f₀
+        function calculateWavelength() {
+            return params.soundSpeed / params.sourceFreq;
+        }
+
+        // 计算周期 T = 1 / f₀
+        function calculatePeriod() {
+            return 1 / params.sourceFreq;
+        }
+
+        // ========== 数据面板更新 ==========
+        function updateDataPanel() {
+            document.getElementById('dataSourceSpeed').textContent = `${params.sourceSpeed} m/s`;
+            document.getElementById('dataSoundSpeed').textContent = `${params.soundSpeed} m/s`;
+            document.getElementById('dataSourceFreq').textContent = `${params.sourceFreq} Hz`;
+            
+            const receivedFreq = calculateReceivedFreq();
+            document.getElementById('dataRecvFreq').textContent = `${receivedFreq.toFixed(1)} Hz`;
+            
+            const wavelength = calculateWavelength();
+            document.getElementById('dataWavelength').textContent = `${wavelength.toFixed(3)} m`;
+            
+            const period = calculatePeriod();
+            document.getElementById('dataPeriod').textContent = `${(period * 1000).toFixed(2)} ms`;
+        }
+
+        // ========== 绘制函数 ==========
+        /**
+         * 绘制背景网格
+         */
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(0, 100, 200, 0.15)';
+            ctx.lineWidth = 1;
+            
+            // 垂直线
+            for (let x = 0; x < canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            // 水平线
+            for (let y = 0; y < canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
+
+        /**
+         * 绘制波前（同心圆）
+         */
+        function drawWaveFronts() {
+            state.waveFronts.forEach((wave, index) => {
+                const radius = wave.radius * state.pixelScale;
+                
+                // 计算透明度（随半径减小）
+                const maxRadius = params.soundSpeed * 3; // 最大显示3秒的波
+                const opacity = Math.max(0, 1 - wave.radius / maxRadius) * 0.6;
+                
+                ctx.beginPath();
+                ctx.arc(wave.x, wave.y, radius, 0, Math.PI * 2);
+                
+                // 半透明青色/蓝色波前
+                ctx.strokeStyle = `rgba(0, 200, 255, ${opacity})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // 内部填充
+                ctx.fillStyle = `rgba(0, 150, 200, ${opacity * 0.15})`;
+                ctx.fill();
+            });
+        }
+
+        /**
+         * 绘制波源（红色圆形）
+         */
+        function drawSource() {
+            // 拖拽时高亮效果
+            const glowRadius = state.isDragging ? 35 : 25;
+            
+            // 发光效果
+            const gradient = ctx.createRadialGradient(
+                state.sourceX, state.sourceY, 0,
+                state.sourceX, state.sourceY, glowRadius
+            );
+            gradient.addColorStop(0, 'rgba(255, 50, 50, 1)');
+            gradient.addColorStop(0.5, 'rgba(255, 50, 50, 0.6)');
+            gradient.addColorStop(1, 'rgba(255, 50, 50, 0)');
+            
+            ctx.beginPath();
+            ctx.arc(state.sourceX, state.sourceY, glowRadius, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // 实心圆
+            const circleRadius = state.isDragging ? 15 : 12;
+            ctx.beginPath();
+            ctx.arc(state.sourceX, state.sourceY, circleRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff3333';
+            ctx.fill();
+            
+            // 拖拽时的边框
+            if (state.isDragging) {
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            
+            // 标签
+            ctx.font = '14px "Microsoft YaHei"';
+            ctx.fillStyle = '#ff6666';
+            ctx.textAlign = 'center';
+            ctx.fillText('波源', state.sourceX, state.sourceY - 25);
+        }
+
+        /**
+         * 绘制观察者（绿色圆形）
+         */
+        function drawObserver() {
+            // 发光效果
+            const gradient = ctx.createRadialGradient(
+                state.observerX, state.sourceY, 0,
+                state.observerX, state.sourceY, 20
+            );
+            gradient.addColorStop(0, 'rgba(0, 255, 100, 1)');
+            gradient.addColorStop(0.5, 'rgba(0, 255, 100, 0.6)');
+            gradient.addColorStop(1, 'rgba(0, 255, 100, 0)');
+            
+            ctx.beginPath();
+            ctx.arc(state.observerX, state.sourceY, 20, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // 实心圆
+            ctx.beginPath();
+            ctx.arc(state.observerX, state.sourceY, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#00ff66';
+            ctx.fill();
+            
+            // 标签
+            ctx.font = '14px "Microsoft YaHei"';
+            ctx.fillStyle = '#00ff66';
+            ctx.textAlign = 'center';
+            ctx.fillText('观察者', state.observerX, state.sourceY - 25);
+            
+            // 显示接收频率
+            const receivedFreq = calculateReceivedFreq();
+            ctx.font = '12px "Consolas"';
+            ctx.fillStyle = '#00ffcc';
+            ctx.fillText(`f' = ${receivedFreq.toFixed(1)} Hz`, state.observerX, state.sourceY + 30);
+        }
+
+        /**
+         * 绘制运动方向箭头
+         */
+        function drawDirectionArrow() {
+            const arrowY = state.sourceY + 40;
+            const arrowLength = 60;
+            const effectiveDirection = getEffectiveDirection();
+            const effectiveSpeed = getEffectiveSpeed();
+            
+            ctx.strokeStyle = '#ffaa00';
+            ctx.fillStyle = '#ffaa00';
+            ctx.lineWidth = 3;
+            
+            // 箭杆
+            ctx.beginPath();
+            if (effectiveDirection === 1) {
+                ctx.moveTo(state.sourceX - arrowLength / 2, arrowY);
+                ctx.lineTo(state.sourceX + arrowLength / 2, arrowY);
+            } else {
+                ctx.moveTo(state.sourceX + arrowLength / 2, arrowY);
+                ctx.lineTo(state.sourceX - arrowLength / 2, arrowY);
+            }
+            ctx.stroke();
+            
+            // 箭头
+            ctx.beginPath();
+            if (effectiveDirection === 1) {
+                ctx.moveTo(state.sourceX + arrowLength / 2, arrowY);
+                ctx.lineTo(state.sourceX + arrowLength / 2 - 10, arrowY - 5);
+                ctx.lineTo(state.sourceX + arrowLength / 2 - 10, arrowY + 5);
+            } else {
+                ctx.moveTo(state.sourceX - arrowLength / 2, arrowY);
+                ctx.lineTo(state.sourceX - arrowLength / 2 + 10, arrowY - 5);
+                ctx.lineTo(state.sourceX - arrowLength / 2 + 10, arrowY + 5);
+            }
+            ctx.fill();
+            
+            // 速度标签
+            ctx.font = '12px "Microsoft YaHei"';
+            ctx.fillStyle = '#ffaa00';
+            ctx.textAlign = 'center';
+            const label = state.isDragging ? '拖拽中' : `${effectiveSpeed.toFixed(0)} m/s`;
+            ctx.fillText(`vₛ = ${label}`, state.sourceX, arrowY + 20);
+        }
+
+        /**
+         * 绘制距离标尺
+         */
+        function drawScale() {
+            const scaleLength = 10 * state.pixelScale; // 10米
+            const startX = 20;
+            const startY = canvas.height - 30;
+            
+            ctx.strokeStyle = '#80b0e0';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(startX + scaleLength, startY);
+            ctx.stroke();
+            
+            // 刻度线
+            ctx.beginPath();
+            ctx.moveTo(startX, startY - 5);
+            ctx.lineTo(startX, startY + 5);
+            ctx.moveTo(startX + scaleLength, startY - 5);
+            ctx.lineTo(startX + scaleLength, startY + 5);
+            ctx.stroke();
+            
+            // 标签
+            ctx.font = '12px "Microsoft YaHei"';
+            ctx.fillStyle = '#80b0e0';
+            ctx.textAlign = 'center';
+            ctx.fillText('10 米', startX + scaleLength / 2, startY + 15);
+        }
+
+        // ========== 动画更新 ==========
+        /**
+         * 获取当前有效波源速度（自动或拖拽）
+         */
+        function getEffectiveSpeed() {
+            if (state.isDragging) {
+                return Math.abs(state.dragVelocity) / state.pixelScale;
+            }
+            return params.sourceSpeed;
+        }
+
+        /**
+         * 获取当前有效方向
+         */
+        function getEffectiveDirection() {
+            if (state.isDragging) {
+                return state.dragVelocity >= 0 ? 1 : -1;
+            }
+            return state.direction;
+        }
+
+        /**
+         * 发射新波前
+         */
+        function emitWave() {
+            const emitInterval = calculatePeriod();
+            if (state.animationTime - state.lastEmitTime >= emitInterval) {
+                state.waveFronts.push({
+                    x: state.sourceX,
+                    y: state.sourceY,
+                    radius: 0,
+                    birthTime: state.animationTime
+                });
+                state.lastEmitTime = state.animationTime;
+            }
+        }
+
+        /**
+         * 更新波前状态
+         */
+        function updateWaveFronts(dt) {
+            // 更新所有波前的半径
+            state.waveFronts.forEach(wave => {
+                wave.radius = params.soundSpeed * (state.animationTime - wave.birthTime);
+            });
+            
+            // 移除过大的波前（超过3秒的波）
+            const maxRadius = params.soundSpeed * 3;
+            state.waveFronts = state.waveFronts.filter(wave => wave.radius <= maxRadius);
+        }
+
+        /**
+         * 更新波源位置
+         */
+        function updateSourcePosition(dt) {
+            const pixelsPerMeter = state.pixelScale;
+            const dx = params.sourceSpeed * pixelsPerMeter * dt * state.direction;
+            
+            state.sourceX += dx;
+            
+            // 边界检测：波源不能超出Canvas
+            if (state.sourceX < 30) {
+                state.sourceX = 30;
+            }
+            if (state.sourceX > canvas.width - 30) {
+                state.sourceX = canvas.width - 30;
+            }
+        }
+
+        // ========== 主循环 ==========
+        let lastFrameTime = 0;
+        
+        function animate(timestamp) {
+            if (!lastFrameTime) lastFrameTime = timestamp;
+            const dt = Math.min((timestamp - lastFrameTime) / 1000, 0.1);
+            lastFrameTime = timestamp;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            
+            if (state.isPlaying) {
+                const scaledDt = dt * params.playbackSpeed;
+                state.animationTime += scaledDt;
+                emitWave();
+                updateWaveFronts(scaledDt);
+                
+                // 自动模式下更新波源位置
+                if (!state.isDragging) {
+                    updateSourcePosition(scaledDt);
+                }
+                
+                updateDataPanel();
+            }
+            
+            drawScale();
+            drawWaveFronts();
+            drawDirectionArrow();
+            drawSource();
+            drawObserver();
+            
+            requestAnimationFrame(animate);
+        }
+
+        // ========== 事件绑定 ==========
+        // 滑块事件
+        document.getElementById('sourceSpeed').addEventListener('input', function() {
+            params.sourceSpeed = parseInt(this.value);
+            document.getElementById('sourceSpeedValue').textContent = `${params.sourceSpeed} m/s`;
+            updateDataPanel();
+        });
+
+        document.getElementById('sourceFreq').addEventListener('input', function() {
+            params.sourceFreq = parseInt(this.value);
+            document.getElementById('sourceFreqValue').textContent = `${params.sourceFreq} Hz`;
+            updateDataPanel();
+        });
+
+        document.getElementById('soundSpeed').addEventListener('input', function() {
+            params.soundSpeed = parseInt(this.value);
+            document.getElementById('soundSpeedValue').textContent = `${params.soundSpeed} m/s`;
+            updateDataPanel();
+        });
+
+        // 开始/暂停按钮
+        document.getElementById('playPauseBtn').addEventListener('click', function() {
+            state.isPlaying = !state.isPlaying;
+            this.textContent = state.isPlaying ? '暂停' : '开始';
+        });
+
+        // 重置按钮
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            state.isPlaying = false;
+            document.getElementById('playPauseBtn').textContent = '开始';
+            init();
+        });
+
+        // 方向控制按钮
+        document.getElementById('directionLeft').addEventListener('click', function() {
+            state.direction = -1;
+            updateDataPanel();
+        });
+
+        document.getElementById('directionRight').addEventListener('click', function() {
+            state.direction = 1;
+            updateDataPanel();
+        });
+
+        // 播放倍速滑块
+        document.getElementById('playbackSpeed').addEventListener('input', function() {
+            params.playbackSpeed = parseFloat(this.value);
+            document.getElementById('playbackSpeedValue').textContent = `${params.playbackSpeed.toFixed(1)}x`;
+        });
+
+        // ========== 波源拖拽功能 ==========
+        /**
+         * 获取鼠标在Canvas中的位置
+         */
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        /**
+         * 检查鼠标是否在波源上
+         */
+        function isOnSource(mouseX, mouseY) {
+            const dx = mouseX - state.sourceX;
+            const dy = mouseY - state.sourceY;
+            return Math.sqrt(dx * dx + dy * dy) <= 20; // 检测半径20像素
+        }
+
+        // 鼠标按下事件
+        canvas.addEventListener('mousedown', function(e) {
+            const pos = getMousePos(e);
+            if (isOnSource(pos.x, pos.y)) {
+                state.isDragging = true;
+                state.lastDragTime = performance.now();
+                state.lastDragX = pos.x;
+                state.dragVelocity = 0;
+                canvas.classList.add('dragging');
+                e.preventDefault();
+            }
+        });
+
+        // 鼠标移动事件
+        canvas.addEventListener('mousemove', function(e) {
+            if (state.isDragging) {
+                const pos = getMousePos(e);
+                const now = performance.now();
+                const dt = (now - state.lastDragTime) / 1000;
+                
+                // 计算位移
+                const dx = pos.x - state.sourceX;
+                
+                // 所有已发射的波前跟随波源一起移动
+                state.waveFronts.forEach(wave => {
+                    wave.x += dx;
+                });
+                
+                // 计算拖拽速度
+                if (dt > 0) {
+                    state.dragVelocity = dx / dt;
+                }
+                
+                // 更新波源位置
+                state.sourceX = Math.max(30, Math.min(canvas.width - 30, pos.x));
+                state.lastDragX = pos.x;
+                state.lastDragTime = now;
+                
+                // 更新数据面板
+                updateDataPanel();
+                e.preventDefault();
+            } else {
+                // 改变光标样式
+                const pos = getMousePos(e);
+                if (isOnSource(pos.x, pos.y)) {
+                    canvas.style.cursor = 'grab';
+                } else {
+                    canvas.style.cursor = 'crosshair';
+                }
+            }
+        });
+
+        // 鼠标释放事件
+        canvas.addEventListener('mouseup', function() {
+            if (state.isDragging) {
+                state.isDragging = false;
+                state.dragVelocity = 0;
+                canvas.classList.remove('dragging');
+            }
+        });
+
+        // 鼠标离开Canvas
+        canvas.addEventListener('mouseleave', function() {
+            if (state.isDragging) {
+                state.isDragging = false;
+                state.dragVelocity = 0;
+                canvas.classList.remove('dragging');
+            }
+        });
+
+        // ========== 启动 ==========
+        init();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
