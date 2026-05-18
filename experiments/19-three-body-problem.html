@@ -1,0 +1,1627 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三体问题数值模拟与混沌轨道可视化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        .back-btn{
+  color:var(--text2);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:6px;
+  transition:all .2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 99;
+}
+.back-btn:hover{
+  color:var(--text);
+  background:var(--bg3);
+}
+.back-btn::before{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(45deg);
+}
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 5px;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+
+        .control-panel {
+            width: 320px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+        }
+
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.1);
+        }
+
+        canvas {
+            display: block;
+            background: #0a0a1a;
+            border-radius: 12px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #00ffff;
+        }
+
+        .param-group {
+            margin-bottom: 12px;
+        }
+
+        .param-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .param-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .param-input:focus {
+            border-color: #00ffff;
+        }
+
+        .param-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .param-row .param-group {
+            flex: 1;
+        }
+
+        .celestial-label {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .celestial-1 {
+            background: rgba(255, 100, 100, 0.3);
+            color: #ff6464;
+        }
+
+        .celestial-2 {
+            background: rgba(100, 255, 100, 0.3);
+            color: #64ff64;
+        }
+
+        .celestial-3 {
+            background: rgba(100, 100, 255, 0.3);
+            color: #6464ff;
+        }
+
+        .select-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .select-input:focus {
+            border-color: #00ffff;
+        }
+
+        .select-input option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00ffff, #0088ff);
+            color: #1a1a2e;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+        }
+
+        .checkbox-input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .preset-btn {
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(0, 255, 255, 0.3);
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #ffffff;
+            z-index: 10;
+            line-height: 1.4;
+        }
+
+        .info-item {
+            margin-bottom: 5px;
+            color: #ffffff;
+        }
+
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #ffffff;
+            z-index: 10;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            color: #ffffff;
+            line-height: 1.3;
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .legend-color-1 {
+            background: #ff6464;
+        }
+
+        .legend-color-2 {
+            background: #64ff64;
+        }
+
+        .legend-color-3 {
+            background: #6464ff;
+        }
+
+        .compare-btn {
+            background: linear-gradient(135deg, #ff8800, #ff4400);
+            color: #fff;
+        }
+
+        .compare-btn:hover {
+            box-shadow: 0 4px 15px rgba(255, 136, 0, 0.3);
+        }
+
+        .contrast-canvas-wrapper {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .contrast-canvas-wrapper canvas {
+            width: 100%;
+            height: 200px;
+        }
+
+        .contrast-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #0a0a1a;
+            border-radius: 12px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .contrast-header {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+
+        .contrast-back-btn {
+            padding: 6px 14px;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .contrast-back-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .contrast-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+            height: calc(100% - 32px);
+        }
+
+        .contrast-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 6px;
+            box-sizing: border-box;
+            overflow: visible;
+        }
+
+        .contrast-item canvas {
+            width: 100%;
+            height: calc(100% - 24px);
+            min-height: 196px;
+            border-radius: 6px;
+            display: block;
+        }
+
+        .contrast-label {
+            color: #ffffff;
+            font-size: 13px;
+            margin-top: 6px;
+            line-height: 1.2;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .zoom-btn {
+            width: 28px;
+            height: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .zoom-text {
+            font-size: 12px;
+            color: #fff;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .reset-view-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .reset-view-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .view-hint {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+      <a href="../index.html" class="back-btn">返回</a>
+        <h1>三体问题数值模拟与混沌轨道可视化</h1>
+        <p>N-body Problem Simulation & Chaotic Orbit Visualization</p>
+    </div>
+
+    <div class="container">
+        <div class="control-panel">
+            <div class="section">
+                <div class="section-title">数值积分方法</div>
+                <select id="integrationMethod" class="select-input">
+                    <option value="euler">欧拉法 (Euler)</option>
+                    <option value="rk4">四阶龙格-库塔法 (RK4)</option>
+                    <option value="verlet">Verlet积分法</option>
+                </select>
+                <div class="param-group">
+                    <label class="param-label">时间步长 (dt)</label>
+                    <input type="number" id="timeStep" class="param-input" value="0.01" step="0.001" min="0.001" max="0.1">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">视图控制</div>
+                <div class="param-group">
+                    <label class="param-label">缩放比例</label>
+                    <input type="range" id="zoomSlider" class="param-input" value="150" min="20" max="500" step="10">
+                </div>
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">中心 X</label>
+                        <input type="number" id="centerX" class="param-input" value="0" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">中心 Y</label>
+                        <input type="number" id="centerY" class="param-input" value="0" step="0.1">
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="resetView()">🔄 重置视图</button>
+            </div>
+
+            <div class="section">
+                <div class="section-title">天体参数 - 天体1</div>
+                <div class="celestial-label celestial-1">☉ 天体 1 (红色)</div>
+                <div class="param-group">
+                    <label class="param-label">质量 (M)</label>
+                    <input type="number" id="m1" class="param-input" value="1.0" step="0.1" min="0.1" max="10">
+                </div>
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">初始位置 X</label>
+                        <input type="number" id="x1" class="param-input" value="-1.0" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">初始位置 Y</label>
+                        <input type="number" id="y1" class="param-input" value="0.0" step="0.1">
+                    </div>
+                </div>
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">初始速度 Vx</label>
+                        <input type="number" id="vx1" class="param-input" value="0.0" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">初始速度 Vy</label>
+                        <input type="number" id="vy1" class="param-input" value="0.5" step="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">天体参数 - 天体2</div>
+                <div class="celestial-label celestial-2">☉ 天体 2 (绿色)</div>
+                <div class="param-group">
+                    <label class="param-label">质量 (M)</label>
+                    <input type="number" id="m2" class="param-input" value="1.0" step="0.1" min="0.1" max="10">
+                </div>
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">初始位置 X</label>
+                        <input type="number" id="x2" class="param-input" value="1.0" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">初始位置 Y</label>
+                        <input type="number" id="y2" class="param-input" value="0.0" step="0.1">
+                    </div>
+                </div>
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">初始速度 Vx</label>
+                        <input type="number" id="vx2" class="param-input" value="0.0" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">初始速度 Vy</label>
+                        <input type="number" id="vy2" class="param-input" value="-0.5" step="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">天体参数 - 天体3</div>
+                <div class="celestial-label celestial-3">☉ 天体 3 (蓝色)</div>
+                <div class="param-group">
+                    <label class="param-label">质量 (M)</label>
+                    <input type="number" id="m3" class="param-input" value="1.0" step="0.1" min="0.1" max="10">
+                </div>
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">初始位置 X</label>
+                        <input type="number" id="x3" class="param-input" value="0.0" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">初始位置 Y</label>
+                        <input type="number" id="y3" class="param-input" value="1.0" step="0.1">
+                    </div>
+                </div>
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">初始速度 Vx</label>
+                        <input type="number" id="vx3" class="param-input" value="0.0" step="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">初始速度 Vy</label>
+                        <input type="number" id="vy3" class="param-input" value="0.0" step="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">预设场景</div>
+                <button class="preset-btn" onclick="loadPreset('figure8')">📐 8字形轨道</button>
+                <button class="preset-btn" onclick="loadPreset('sunearthmoon')">🌍 日地月系统</button>
+                <button class="preset-btn" onclick="loadPreset('hierarchical')">📊 层级系统</button>
+                <div class="param-label" style="margin-top: 10px; margin-bottom: 6px; color: rgba(255,255,255,0.6);">🌀 混沌系统：</div>
+                <button class="preset-btn" onclick="loadPreset('stable2')">🌀 零角动量混沌游荡解</button>
+
+                <button class="preset-btn" onclick="loadPreset('chaotic4')">🌀 混沌2 - 大微扰</button>
+            </div>
+
+            <div class="section">
+                <div class="section-title">显示选项</div>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="showTrails" class="checkbox-input" checked>
+                    显示运动轨迹
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="showInfo" class="checkbox-input" checked>
+                    显示信息面板
+                </label>
+            </div>
+
+            <div class="section">
+                <div class="section-title">动画控制</div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="playBtn" onclick="togglePlay()">▶ 播放</button>
+                    <button class="btn btn-secondary" onclick="resetSimulation()">🔄 重置</button>
+                </div>
+                <button class="btn btn-secondary" onclick="stepSimulation()">⏭ 单步</button>
+                <button class="btn compare-btn" onclick="generateContrast()">📊 生成对比图</button>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <div class="canvas-wrapper">
+                <canvas id="mainCanvas" width="800" height="600"></canvas>
+                <div class="info-panel" id="infoPanel">
+                    <div class="info-item">方法: <span id="methodInfo">RK4</span></div>
+                    <div class="info-item">时间: <span id="timeInfo">0.00</span></div>
+                    <div class="info-item">步数: <span id="stepInfo">0</span></div>
+                    <div class="info-item">缩放: <span id="zoomInfo">150%</span></div>
+                </div>
+                <div class="view-hint">鼠标拖拽平移 | 滚轮缩放</div>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color legend-color-1"></div> 天体 1</div>
+                    <div class="legend-item"><div class="legend-color legend-color-2"></div> 天体 2</div>
+                    <div class="legend-item"><div class="legend-color legend-color-3"></div> 天体 3</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+class CelestialBody {
+    constructor(mass, x, y, vx, vy, color) {
+        this.mass = mass;
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.color = color;
+        this.trail = [];
+        this.maxTrailLength = 500;
+    }
+
+    addToTrail(x, y) {
+        this.trail.push({ x, y });
+        if (this.trail.length > this.maxTrailLength) {
+            this.trail.shift();
+        }
+    }
+
+    clearTrail() {
+        this.trail = [];
+    }
+}
+
+class ThreeBodySimulation {
+    constructor() {
+        this.canvas = document.getElementById('mainCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
+        
+        this.bodies = [];
+        this.time = 0;
+        this.steps = 0;
+        this.isRunning = false;
+        this.animationId = null;
+        
+        this.integrationMethod = 'rk4';
+        this.dt = 0.01;
+        
+        this.showTrails = true;
+        this.showInfo = true;
+        
+        this.baseScale = 150;
+        this.scale = this.baseScale;
+        this.offsetX = this.width / 2;
+        this.offsetY = this.height / 2;
+        this.centerX = 0;
+        this.centerY = 0;
+        
+        this.isDragging = false;
+        this.lastMouseX = 0;
+        this.lastMouseY = 0;
+        
+        this.initBodies();
+        this.setupEventListeners();
+        this.render();
+    }
+
+    initBodies() {
+        this.bodies = [
+            new CelestialBody(1.0, -1.0, 0.0, 0.0, 0.5, '#ff6464'),
+            new CelestialBody(1.0, 1.0, 0.0, 0.0, -0.5, '#64ff64'),
+            new CelestialBody(1.0, 0.0, 1.0, 0.0, 0.0, '#6464ff')
+        ];
+    }
+
+    setupEventListeners() {
+        document.getElementById('integrationMethod').addEventListener('change', (e) => {
+            this.integrationMethod = e.target.value;
+            document.getElementById('methodInfo').textContent = this.getMethodName();
+        });
+
+        document.getElementById('timeStep').addEventListener('input', (e) => {
+            this.dt = parseFloat(e.target.value);
+        });
+
+        document.getElementById('showTrails').addEventListener('change', (e) => {
+            this.showTrails = e.target.checked;
+        });
+
+        document.getElementById('showInfo').addEventListener('change', (e) => {
+            this.showInfo = e.target.checked;
+            document.getElementById('infoPanel').style.display = this.showInfo ? 'block' : 'none';
+        });
+
+        document.getElementById('zoomSlider').addEventListener('input', (e) => {
+            this.scale = parseFloat(e.target.value);
+            this.updateZoomInfo();
+            if (!this.isRunning) this.render();
+        });
+
+        document.getElementById('centerX').addEventListener('input', (e) => {
+            this.centerX = parseFloat(e.target.value);
+            if (!this.isRunning) this.render();
+        });
+
+        document.getElementById('centerY').addEventListener('input', (e) => {
+            this.centerY = parseFloat(e.target.value);
+            if (!this.isRunning) this.render();
+        });
+
+        this.canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            this.scale *= delta;
+            this.scale = Math.max(20, Math.min(500, this.scale));
+            document.getElementById('zoomSlider').value = this.scale;
+            this.updateZoomInfo();
+            if (!this.isRunning) this.render();
+        });
+
+        this.canvas.addEventListener('mousedown', (e) => {
+            this.isDragging = true;
+            this.lastMouseX = e.clientX;
+            this.lastMouseY = e.clientY;
+            this.canvas.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (this.isDragging) {
+                const dx = e.clientX - this.lastMouseX;
+                const dy = e.clientY - this.lastMouseY;
+                this.offsetX += dx;
+                this.offsetY += dy;
+                this.lastMouseX = e.clientX;
+                this.lastMouseY = e.clientY;
+                if (!this.isRunning) this.render();
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            this.isDragging = false;
+            this.canvas.style.cursor = 'default';
+        });
+
+        ['m1', 'm2', 'm3', 'x1', 'x2', 'x3', 'y1', 'y2', 'y3', 'vx1', 'vx2', 'vx3', 'vy1', 'vy2', 'vy3'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                this.updateBodiesFromUI();
+            });
+        });
+    }
+
+    updateZoomInfo() {
+        document.getElementById('zoomInfo').textContent = Math.round(this.scale) + '%';
+    }
+
+    getMethodName() {
+        const names = {
+            'euler': '欧拉法',
+            'rk4': 'RK4',
+            'verlet': 'Verlet'
+        };
+        return names[this.integrationMethod] || this.integrationMethod;
+    }
+
+    updateBodiesFromUI() {
+        const bodies = this.bodies;
+        bodies[0].mass = parseFloat(document.getElementById('m1').value);
+        bodies[0].x = parseFloat(document.getElementById('x1').value);
+        bodies[0].y = parseFloat(document.getElementById('y1').value);
+        bodies[0].vx = parseFloat(document.getElementById('vx1').value);
+        bodies[0].vy = parseFloat(document.getElementById('vy1').value);
+
+        bodies[1].mass = parseFloat(document.getElementById('m2').value);
+        bodies[1].x = parseFloat(document.getElementById('x2').value);
+        bodies[1].y = parseFloat(document.getElementById('y2').value);
+        bodies[1].vx = parseFloat(document.getElementById('vx2').value);
+        bodies[1].vy = parseFloat(document.getElementById('vy2').value);
+
+        bodies[2].mass = parseFloat(document.getElementById('m3').value);
+        bodies[2].x = parseFloat(document.getElementById('x3').value);
+        bodies[2].y = parseFloat(document.getElementById('y3').value);
+        bodies[2].vx = parseFloat(document.getElementById('vx3').value);
+        bodies[2].vy = parseFloat(document.getElementById('vy3').value);
+    }
+
+    clearAllTrails() {
+        this.bodies.forEach(b => b.clearTrail());
+        this.time = 0;
+        this.steps = 0;
+    }
+
+    getAcceleration(bodyIndex) {
+        const body = this.bodies[bodyIndex];
+        let ax = 0, ay = 0;
+        
+        for (let i = 0; i < this.bodies.length; i++) {
+            if (i !== bodyIndex) {
+                const other = this.bodies[i];
+                const dx = other.x - body.x;
+                const dy = other.y - body.y;
+                const r = Math.sqrt(dx * dx + dy * dy);
+                const r3 = r * r * r;
+                ax += other.mass * dx / r3;
+                ay += other.mass * dy / r3;
+            }
+        }
+        
+        return { ax, ay };
+    }
+
+    eulerStep() {
+        const newPositions = [];
+        
+        for (let i = 0; i < this.bodies.length; i++) {
+            const body = this.bodies[i];
+            const { ax, ay } = this.getAcceleration(i);
+            
+            newPositions.push({
+                x: body.x + body.vx * this.dt,
+                y: body.y + body.vy * this.dt,
+                vx: body.vx + ax * this.dt,
+                vy: body.vy + ay * this.dt
+            });
+        }
+        
+        for (let i = 0; i < this.bodies.length; i++) {
+            this.bodies[i].addToTrail(this.bodies[i].x, this.bodies[i].y);
+            this.bodies[i].x = newPositions[i].x;
+            this.bodies[i].y = newPositions[i].y;
+            this.bodies[i].vx = newPositions[i].vx;
+            this.bodies[i].vy = newPositions[i].vy;
+        }
+    }
+
+    rk4Step() {
+        const n = this.bodies.length;
+        const k1v = [], k1x = [];
+        const k2v = [], k2x = [];
+        const k3v = [], k3x = [];
+        const k4v = [], k4x = [];
+
+        for (let i = 0; i < n; i++) {
+            const { ax, ay } = this.getAcceleration(i);
+            k1v.push({ vx: ax * this.dt, vy: ay * this.dt });
+            k1x.push({ x: this.bodies[i].vx * this.dt, y: this.bodies[i].vy * this.dt });
+        }
+
+        const originalPositions = this.bodies.map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy }));
+        for (let i = 0; i < n; i++) {
+            this.bodies[i].x = originalPositions[i].x + k1x[i].x * 0.5;
+            this.bodies[i].y = originalPositions[i].y + k1x[i].y * 0.5;
+            this.bodies[i].vx = originalPositions[i].vx + k1v[i].vx * 0.5;
+            this.bodies[i].vy = originalPositions[i].vy + k1v[i].vy * 0.5;
+        }
+
+        for (let i = 0; i < n; i++) {
+            const { ax, ay } = this.getAcceleration(i);
+            k2v.push({ vx: ax * this.dt, vy: ay * this.dt });
+            k2x.push({ x: this.bodies[i].vx * this.dt, y: this.bodies[i].vy * this.dt });
+        }
+
+        for (let i = 0; i < n; i++) {
+            this.bodies[i].x = originalPositions[i].x + k2x[i].x * 0.5;
+            this.bodies[i].y = originalPositions[i].y + k2x[i].y * 0.5;
+            this.bodies[i].vx = originalPositions[i].vx + k2v[i].vx * 0.5;
+            this.bodies[i].vy = originalPositions[i].vy + k2v[i].vy * 0.5;
+        }
+
+        for (let i = 0; i < n; i++) {
+            const { ax, ay } = this.getAcceleration(i);
+            k3v.push({ vx: ax * this.dt, vy: ay * this.dt });
+            k3x.push({ x: this.bodies[i].vx * this.dt, y: this.bodies[i].vy * this.dt });
+        }
+
+        for (let i = 0; i < n; i++) {
+            this.bodies[i].x = originalPositions[i].x + k3x[i].x;
+            this.bodies[i].y = originalPositions[i].y + k3x[i].y;
+            this.bodies[i].vx = originalPositions[i].vx + k3v[i].vx;
+            this.bodies[i].vy = originalPositions[i].vy + k3v[i].vy;
+        }
+
+        for (let i = 0; i < n; i++) {
+            const { ax, ay } = this.getAcceleration(i);
+            k4v.push({ vx: ax * this.dt, vy: ay * this.dt });
+            k4x.push({ x: this.bodies[i].vx * this.dt, y: this.bodies[i].vy * this.dt });
+        }
+
+        for (let i = 0; i < n; i++) {
+            this.bodies[i].addToTrail(this.bodies[i].x, this.bodies[i].y);
+            this.bodies[i].x = originalPositions[i].x + (k1x[i].x + 2*k2x[i].x + 2*k3x[i].x + k4x[i].x) / 6;
+            this.bodies[i].y = originalPositions[i].y + (k1x[i].y + 2*k2x[i].y + 2*k3x[i].y + k4x[i].y) / 6;
+            this.bodies[i].vx = originalPositions[i].vx + (k1v[i].vx + 2*k2v[i].vx + 2*k3v[i].vx + k4v[i].vx) / 6;
+            this.bodies[i].vy = originalPositions[i].vy + (k1v[i].vy + 2*k2v[i].vy + 2*k3v[i].vy + k4v[i].vy) / 6;
+        }
+    }
+
+    verletStep() {
+        const n = this.bodies.length;
+        const accelerations = [];
+        
+        for (let i = 0; i < n; i++) {
+            accelerations.push(this.getAcceleration(i));
+        }
+
+        const newPositions = [];
+        for (let i = 0; i < n; i++) {
+            const body = this.bodies[i];
+            newPositions.push({
+                x: body.x + body.vx * this.dt + 0.5 * accelerations[i].ax * this.dt * this.dt,
+                y: body.y + body.vy * this.dt + 0.5 * accelerations[i].ay * this.dt * this.dt
+            });
+        }
+
+        for (let i = 0; i < n; i++) {
+            this.bodies[i].addToTrail(this.bodies[i].x, this.bodies[i].y);
+            this.bodies[i].x = newPositions[i].x;
+            this.bodies[i].y = newPositions[i].y;
+        }
+
+        const newAccelerations = [];
+        for (let i = 0; i < n; i++) {
+            newAccelerations.push(this.getAcceleration(i));
+        }
+
+        for (let i = 0; i < n; i++) {
+            this.bodies[i].vx += 0.5 * (accelerations[i].ax + newAccelerations[i].ax) * this.dt;
+            this.bodies[i].vy += 0.5 * (accelerations[i].ay + newAccelerations[i].ay) * this.dt;
+        }
+    }
+
+    step() {
+        switch (this.integrationMethod) {
+            case 'euler':
+                this.eulerStep();
+                break;
+            case 'rk4':
+                this.rk4Step();
+                break;
+            case 'verlet':
+                this.verletStep();
+                break;
+        }
+        this.time += this.dt;
+        this.steps++;
+    }
+
+    worldToScreen(x, y) {
+        return {
+            sx: (x - this.centerX) * this.scale + this.offsetX,
+            sy: -(y - this.centerY) * this.scale + this.offsetY
+        };
+    }
+
+    render() {
+        this.ctx.fillStyle = '#0a0a1a';
+        this.ctx.fillRect(0, 0, this.width, this.height);
+
+        this.drawGrid();
+
+        if (this.showTrails) {
+            this.drawTrails();
+        }
+
+        this.drawBodies();
+
+        this.updateInfo();
+
+        if (this.isRunning) {
+            this.step();
+            this.animationId = requestAnimationFrame(() => this.render());
+        }
+    }
+
+    drawGrid() {
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        this.ctx.lineWidth = 1;
+
+        const gridSize = 1;
+        const startX = this.centerX - this.offsetX / this.scale;
+        const endX = this.centerX + (this.width - this.offsetX) / this.scale;
+        const startY = this.centerY - (this.height - this.offsetY) / this.scale;
+        const endY = this.centerY + this.offsetY / this.scale;
+
+        for (let x = Math.floor(startX); x <= endX; x += gridSize) {
+            const { sx } = this.worldToScreen(x, 0);
+            this.ctx.beginPath();
+            this.ctx.moveTo(sx, 0);
+            this.ctx.lineTo(sx, this.height);
+            this.ctx.stroke();
+        }
+
+        for (let y = Math.floor(startY); y <= endY; y += gridSize) {
+            const { sy } = this.worldToScreen(0, y);
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, sy);
+            this.ctx.lineTo(this.width, sy);
+            this.ctx.stroke();
+        }
+
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        this.ctx.beginPath();
+        const { sx: originX, sy: originY } = this.worldToScreen(0, 0);
+        this.ctx.moveTo(0, originY);
+        this.ctx.lineTo(this.width, originY);
+        this.ctx.moveTo(originX, 0);
+        this.ctx.lineTo(originX, this.height);
+        this.ctx.stroke();
+    }
+
+    drawTrails() {
+        this.bodies.forEach(body => {
+            if (body.trail.length < 2) return;
+
+            this.ctx.beginPath();
+            const first = this.worldToScreen(body.trail[0].x, body.trail[0].y);
+            this.ctx.moveTo(first.sx, first.sy);
+
+            for (let i = 1; i < body.trail.length; i++) {
+                const { sx, sy } = this.worldToScreen(body.trail[i].x, body.trail[i].y);
+                this.ctx.lineTo(sx, sy);
+            }
+
+            this.ctx.strokeStyle = body.color + '40';
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+        });
+    }
+
+    drawBodies() {
+        this.bodies.forEach(body => {
+            const { sx, sy } = this.worldToScreen(body.x, body.y);
+            const radius = Math.max(6, Math.sqrt(body.mass) * 6);
+
+            const gradient = this.ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
+            gradient.addColorStop(0, body.color);
+            gradient.addColorStop(0.5, body.color + 'cc');
+            gradient.addColorStop(1, body.color + '44');
+
+            this.ctx.beginPath();
+            this.ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+            this.ctx.fillStyle = gradient;
+            this.ctx.fill();
+
+            this.ctx.beginPath();
+            this.ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+            this.ctx.strokeStyle = body.color;
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
+        });
+    }
+
+    updateInfo() {
+        document.getElementById('methodInfo').textContent = this.getMethodName();
+        document.getElementById('timeInfo').textContent = this.time.toFixed(2);
+        document.getElementById('stepInfo').textContent = this.steps.toString();
+    }
+
+    start() {
+        if (!this.isRunning) {
+            this.isRunning = true;
+            document.getElementById('playBtn').textContent = '⏸ 暂停';
+            this.render();
+        }
+    }
+
+    pause() {
+        this.isRunning = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+        document.getElementById('playBtn').textContent = '▶ 播放';
+        this.render();
+    }
+
+    togglePlay() {
+        if (this.isRunning) {
+            this.pause();
+        } else {
+            this.start();
+        }
+    }
+
+    reset() {
+        this.pause();
+        this.updateBodiesFromUI();
+        this.clearAllTrails();
+        this.render();
+    }
+
+    runSingleStep() {
+        this.step();
+        this.render();
+    }
+
+    setView(scale, centerX, centerY) {
+        this.scale = scale;
+        this.centerX = centerX;
+        this.centerY = centerY;
+        this.offsetX = this.width / 2;
+        this.offsetY = this.height / 2;
+        document.getElementById('zoomSlider').value = scale;
+        document.getElementById('centerX').value = centerX;
+        document.getElementById('centerY').value = centerY;
+        this.updateZoomInfo();
+    }
+}
+
+let simulation;
+
+function loadPreset(preset) {
+    const wasRunning = simulation.isRunning;
+    if (wasRunning) {
+        simulation.pause();
+    }
+    
+    const presets = {
+        figure8: {
+            m1: 1.0, x1: -0.97000436, y1: 0.24308753, vx1: 0.466203685, vy1: 0.43236573,
+            m2: 1.0, x2: 0.97000436, y2: -0.24308753, vx2: 0.466203685, vy2: 0.43236573,
+            m3: 1.0, x3: 0, y3: 0, vx3: -0.93240737, vy3: -0.86473146,
+            scale: 180, centerX: 0, centerY: 0
+        },
+        sunearthmoon: {
+            m1: 10.0, x1: 0.0, y1: 0.0, vx1: 0.0, vy1: 0.0783,
+            m2: 0.3, x2: 2.0, y2: 0.0, vx2: 0.0, vy2: -2.1578,
+            m3: 0.04, x3: 2.2, y3: 0.0, vx3: 0.0, vy3: -3.3825,
+            scale: 120, centerX: 0.07, centerY: 0
+        },
+        hierarchical: {
+            m1: 5.0, x1: 0.0, y1: 0.0, vx1: 0.0, vy1: 0.0,
+            m2: 0.5, x2: 1.0, y2: 0.0, vx2: 0.0, vy2: -2.236,
+            m3: 0.1, x3: 0.0, y3: 1.8, vx3: -1.667, vy3: 0.0,
+            scale: 100, centerX: 0.02, centerY: 0
+        },
+
+        chaotic4: {
+            m1: 1.0, x1: -0.87, y1: 0.24308753, vx1: 0.466203685, vy1: 0.43236573,
+            m2: 1.0, x2: 0.97000436, y2: -0.24308753, vx2: 0.466203685, vy2: 0.43236573,
+            m3: 1.0, x3: 0.0, y3: 0.0, vx3: -0.93240737, vy3: -0.86473146,
+            scale: 150, centerX: 0, centerY: 0
+        },
+        stable2: {
+            m1: 1.0, x1: -3.0, y1: 0.0, vx1: 0.0, vy1: 0.3,
+            m2: 1.0, x2: 1.5, y2: 2.2, vx2: -0.25, vy2: -0.1,
+            m3: 1.0, x3: 1.5, y3: -2.2, vx3: 0.25, vy3: -0.1,
+            scale: 60, centerX: 0, centerY: 0
+        }
+    };
+
+    const p = presets[preset];
+    if (p) {
+        ['m1', 'm2', 'm3', 'x1', 'x2', 'x3', 'y1', 'y2', 'y3', 'vx1', 'vx2', 'vx3', 'vy1', 'vy2', 'vy3'].forEach(id => {
+            document.getElementById(id).value = p[id];
+        });
+        simulation.updateBodiesFromUI();
+        simulation.clearAllTrails();
+        
+        if (p.scale !== undefined) {
+            simulation.setView(p.scale, p.centerX || 0, p.centerY || 0);
+        }
+        
+        simulation.render();
+        
+        if (wasRunning) {
+            simulation.start();
+        }
+    }
+}
+
+function togglePlay() {
+    simulation.togglePlay();
+}
+
+function resetSimulation() {
+    simulation.reset();
+}
+
+function stepSimulation() {
+    simulation.runSingleStep();
+}
+
+function resetView() {
+    simulation.setView(150, 0, 0);
+    simulation.render();
+}
+
+function generateContrast() {
+    const methods = ['euler', 'rk4', 'verlet'];
+    const canvasContainer = document.querySelector('.canvas-container');
+    
+    canvasContainer.innerHTML = `
+        <div class="canvas-wrapper" style="width: 800px; height: 600px; position: relative; background: #0a0a1a; border-radius: 12px; font-family: Arial, sans-serif;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; padding: 15px; padding-bottom: 50px; height: 100%; box-sizing: border-box;">
+                <div class="contrast-item">
+                    <canvas id="canvas1" width="380" height="255"></canvas>
+                    <div class="contrast-label">欧拉法</div>
+                </div>
+                <div class="contrast-item">
+                    <canvas id="canvas2" width="380" height="255"></canvas>
+                    <div class="contrast-label">RK4法</div>
+                </div>
+                <div class="contrast-item">
+                    <canvas id="canvas3" width="380" height="255"></canvas>
+                    <div class="contrast-label">Verlet法</div>
+                </div>
+                <div class="contrast-item">
+                    <canvas id="canvas4" width="380" height="255"></canvas>
+                    <div class="contrast-label">能量对比</div>
+                </div>
+            </div>
+            <div style="position: absolute; bottom: 12px; right: 12px; z-index: 20;">
+                <button onclick="restoreMainView()" style="padding: 8px 16px; font-size: 13px; background: rgba(0, 60, 100, 0.95); color: #ffffff; border: 1px solid rgba(0, 150, 200, 0.5); border-radius: 5px; cursor: pointer; font-family: Arial, sans-serif;">← 返回主视图</button>
+            </div>
+        </div>
+    `;
+
+    const bodies = [
+        { mass: parseFloat(document.getElementById('m1').value), x: parseFloat(document.getElementById('x1').value), y: parseFloat(document.getElementById('y1').value), vx: parseFloat(document.getElementById('vx1').value), vy: parseFloat(document.getElementById('vy1').value), color: '#ff6464' },
+        { mass: parseFloat(document.getElementById('m2').value), x: parseFloat(document.getElementById('x2').value), y: parseFloat(document.getElementById('y2').value), vx: parseFloat(document.getElementById('vx2').value), vy: parseFloat(document.getElementById('vy2').value), color: '#64ff64' },
+        { mass: parseFloat(document.getElementById('m3').value), x: parseFloat(document.getElementById('x3').value), y: parseFloat(document.getElementById('y3').value), vx: parseFloat(document.getElementById('vx3').value), vy: parseFloat(document.getElementById('vy3').value), color: '#6464ff' }
+    ];
+
+    const dt = parseFloat(document.getElementById('timeStep').value);
+    const steps = 5000;
+
+    methods.forEach((method, index) => {
+        const canvas = document.getElementById(`canvas${index + 1}`);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const simBodies = bodies.map(b => ({ ...b }));
+        const trails = [[], [], []];
+
+        for (let i = 0; i < steps; i++) {
+            stepMethod(simBodies, method, dt, trails);
+        }
+
+        drawTrailsOnCanvas(ctx, trails, canvas.width, canvas.height);
+        drawBodiesOnCanvas(ctx, simBodies, canvas.width, canvas.height);
+    });
+
+    drawEnergyComparison();
+}
+
+function stepMethod(bodies, method, dt, trails) {
+    const n = bodies.length;
+    
+    if (method === 'euler') {
+        const newPositions = [];
+        for (let i = 0; i < n; i++) {
+            const body = bodies[i];
+            let ax = 0, ay = 0;
+            for (let j = 0; j < n; j++) {
+                if (j !== i) {
+                    const dx = bodies[j].x - body.x;
+                    const dy = bodies[j].y - body.y;
+                    const r = Math.sqrt(dx * dx + dy * dy);
+                    const r3 = r * r * r;
+                    ax += bodies[j].mass * dx / r3;
+                    ay += bodies[j].mass * dy / r3;
+                }
+            }
+            newPositions.push({
+                x: body.x + body.vx * dt,
+                y: body.y + body.vy * dt,
+                vx: body.vx + ax * dt,
+                vy: body.vy + ay * dt
+            });
+        }
+        for (let i = 0; i < n; i++) {
+            trails[i].push({ x: bodies[i].x, y: bodies[i].y });
+            bodies[i].x = newPositions[i].x;
+            bodies[i].y = newPositions[i].y;
+            bodies[i].vx = newPositions[i].vx;
+            bodies[i].vy = newPositions[i].vy;
+        }
+    } else if (method === 'rk4') {
+        const k1v = [], k1x = [];
+        for (let i = 0; i < n; i++) {
+            let ax = 0, ay = 0;
+            for (let j = 0; j < n; j++) {
+                if (j !== i) {
+                    const dx = bodies[j].x - bodies[i].x;
+                    const dy = bodies[j].y - bodies[i].y;
+                    const r = Math.sqrt(dx * dx + dy * dy);
+                    const r3 = r * r * r;
+                    ax += bodies[j].mass * dx / r3;
+                    ay += bodies[j].mass * dy / r3;
+                }
+            }
+            k1v.push({ vx: ax * dt, vy: ay * dt });
+            k1x.push({ x: bodies[i].vx * dt, y: bodies[i].vy * dt });
+        }
+
+        const orig = bodies.map(b => ({ ...b }));
+        for (let i = 0; i < n; i++) {
+            bodies[i].x = orig[i].x + k1x[i].x * 0.5;
+            bodies[i].y = orig[i].y + k1x[i].y * 0.5;
+            bodies[i].vx = orig[i].vx + k1v[i].vx * 0.5;
+            bodies[i].vy = orig[i].vy + k1v[i].vy * 0.5;
+        }
+
+        const k2v = [], k2x = [];
+        for (let i = 0; i < n; i++) {
+            let ax = 0, ay = 0;
+            for (let j = 0; j < n; j++) {
+                if (j !== i) {
+                    const dx = bodies[j].x - bodies[i].x;
+                    const dy = bodies[j].y - bodies[i].y;
+                    const r = Math.sqrt(dx * dx + dy * dy);
+                    const r3 = r * r * r;
+                    ax += bodies[j].mass * dx / r3;
+                    ay += bodies[j].mass * dy / r3;
+                }
+            }
+            k2v.push({ vx: ax * dt, vy: ay * dt });
+            k2x.push({ x: bodies[i].vx * dt, y: bodies[i].vy * dt });
+        }
+
+        for (let i = 0; i < n; i++) {
+            bodies[i].x = orig[i].x + k2x[i].x * 0.5;
+            bodies[i].y = orig[i].y + k2x[i].y * 0.5;
+            bodies[i].vx = orig[i].vx + k2v[i].vx * 0.5;
+            bodies[i].vy = orig[i].vy + k2v[i].vy * 0.5;
+        }
+
+        const k3v = [], k3x = [];
+        for (let i = 0; i < n; i++) {
+            let ax = 0, ay = 0;
+            for (let j = 0; j < n; j++) {
+                if (j !== i) {
+                    const dx = bodies[j].x - bodies[i].x;
+                    const dy = bodies[j].y - bodies[i].y;
+                    const r = Math.sqrt(dx * dx + dy * dy);
+                    const r3 = r * r * r;
+                    ax += bodies[j].mass * dx / r3;
+                    ay += bodies[j].mass * dy / r3;
+                }
+            }
+            k3v.push({ vx: ax * dt, vy: ay * dt });
+            k3x.push({ x: bodies[i].vx * dt, y: bodies[i].vy * dt });
+        }
+
+        for (let i = 0; i < n; i++) {
+            bodies[i].x = orig[i].x + k3x[i].x;
+            bodies[i].y = orig[i].y + k3x[i].y;
+            bodies[i].vx = orig[i].vx + k3v[i].vx;
+            bodies[i].vy = orig[i].vy + k3v[i].vy;
+        }
+
+        const k4v = [], k4x = [];
+        for (let i = 0; i < n; i++) {
+            let ax = 0, ay = 0;
+            for (let j = 0; j < n; j++) {
+                if (j !== i) {
+                    const dx = bodies[j].x - bodies[i].x;
+                    const dy = bodies[j].y - bodies[i].y;
+                    const r = Math.sqrt(dx * dx + dy * dy);
+                    const r3 = r * r * r;
+                    ax += bodies[j].mass * dx / r3;
+                    ay += bodies[j].mass * dy / r3;
+                }
+            }
+            k4v.push({ vx: ax * dt, vy: ay * dt });
+            k4x.push({ x: bodies[i].vx * dt, y: bodies[i].vy * dt });
+        }
+
+        for (let i = 0; i < n; i++) {
+            trails[i].push({ x: orig[i].x, y: orig[i].y });
+            bodies[i].x = orig[i].x + (k1x[i].x + 2*k2x[i].x + 2*k3x[i].x + k4x[i].x) / 6;
+            bodies[i].y = orig[i].y + (k1x[i].y + 2*k2x[i].y + 2*k3x[i].y + k4x[i].y) / 6;
+            bodies[i].vx = orig[i].vx + (k1v[i].vx + 2*k2v[i].vx + 2*k3v[i].vx + k4v[i].vx) / 6;
+            bodies[i].vy = orig[i].vy + (k1v[i].vy + 2*k2v[i].vy + 2*k3v[i].vy + k4v[i].vy) / 6;
+        }
+    } else if (method === 'verlet') {
+        const acc = [];
+        for (let i = 0; i < n; i++) {
+            let ax = 0, ay = 0;
+            for (let j = 0; j < n; j++) {
+                if (j !== i) {
+                    const dx = bodies[j].x - bodies[i].x;
+                    const dy = bodies[j].y - bodies[i].y;
+                    const r = Math.sqrt(dx * dx + dy * dy);
+                    const r3 = r * r * r;
+                    ax += bodies[j].mass * dx / r3;
+                    ay += bodies[j].mass * dy / r3;
+                }
+            }
+            acc.push({ ax, ay });
+        }
+
+        for (let i = 0; i < n; i++) {
+            trails[i].push({ x: bodies[i].x, y: bodies[i].y });
+            bodies[i].x = bodies[i].x + bodies[i].vx * dt + 0.5 * acc[i].ax * dt * dt;
+            bodies[i].y = bodies[i].y + bodies[i].vy * dt + 0.5 * acc[i].ay * dt * dt;
+        }
+
+        const newAcc = [];
+        for (let i = 0; i < n; i++) {
+            let ax = 0, ay = 0;
+            for (let j = 0; j < n; j++) {
+                if (j !== i) {
+                    const dx = bodies[j].x - bodies[i].x;
+                    const dy = bodies[j].y - bodies[i].y;
+                    const r = Math.sqrt(dx * dx + dy * dy);
+                    const r3 = r * r * r;
+                    ax += bodies[j].mass * dx / r3;
+                    ay += bodies[j].mass * dy / r3;
+                }
+            }
+            newAcc.push({ ax, ay });
+        }
+
+        for (let i = 0; i < n; i++) {
+            bodies[i].vx += 0.5 * (acc[i].ax + newAcc[i].ax) * dt;
+            bodies[i].vy += 0.5 * (acc[i].ay + newAcc[i].ay) * dt;
+        }
+    }
+}
+
+function drawTrailsOnCanvas(ctx, trails, width, height) {
+    const scale = 80;
+    const offsetX = width / 2;
+    const offsetY = height / 2;
+
+    trails.forEach((trail, index) => {
+        if (trail.length < 2) return;
+
+        const colors = ['#ff6464', '#64ff64', '#6464ff'];
+        ctx.beginPath();
+        const first = { sx: trail[0].x * scale + offsetX, sy: -trail[0].y * scale + offsetY };
+        ctx.moveTo(first.sx, first.sy);
+
+        for (let i = 1; i < trail.length; i++) {
+            const sx = trail[i].x * scale + offsetX;
+            const sy = -trail[i].y * scale + offsetY;
+            ctx.lineTo(sx, sy);
+        }
+
+        ctx.strokeStyle = colors[index] + '60';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    });
+}
+
+function drawBodiesOnCanvas(ctx, bodies, width, height) {
+    const scale = 80;
+    const offsetX = width / 2;
+    const offsetY = height / 2;
+
+    bodies.forEach(body => {
+        const sx = body.x * scale + offsetX;
+        const sy = -body.y * scale + offsetY;
+        const radius = Math.max(5, Math.sqrt(body.mass) * 5);
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = body.color;
+        ctx.fill();
+    });
+}
+
+function drawEnergyComparison() {
+    const canvas = document.getElementById('canvas4');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#0a0a1a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const bodies = [
+        { mass: parseFloat(document.getElementById('m1').value), x: parseFloat(document.getElementById('x1').value), y: parseFloat(document.getElementById('y1').value), vx: parseFloat(document.getElementById('vx1').value), vy: parseFloat(document.getElementById('vy1').value) },
+        { mass: parseFloat(document.getElementById('m2').value), x: parseFloat(document.getElementById('x2').value), y: parseFloat(document.getElementById('y2').value), vx: parseFloat(document.getElementById('vx2').value), vy: parseFloat(document.getElementById('vy2').value) },
+        { mass: parseFloat(document.getElementById('m3').value), x: parseFloat(document.getElementById('x3').value), y: parseFloat(document.getElementById('y3').value), vx: parseFloat(document.getElementById('vx3').value), vy: parseFloat(document.getElementById('vy3').value) }
+    ];
+
+    const dt = parseFloat(document.getElementById('timeStep').value);
+    const steps = 2000;
+    const methods = ['euler', 'rk4', 'verlet'];
+    const colors = ['#ff6464', '#64ff64', '#6464ff'];
+
+    methods.forEach((method, mIndex) => {
+        const simBodies = bodies.map(b => ({ ...b }));
+        const energies = [];
+
+        for (let i = 0; i < steps; i++) {
+            let ke = 0;
+            let pe = 0;
+
+            simBodies.forEach(body => {
+                ke += 0.5 * body.mass * (body.vx * body.vx + body.vy * body.vy);
+            });
+
+            for (let i = 0; i < simBodies.length; i++) {
+                for (let j = i + 1; j < simBodies.length; j++) {
+                    const dx = simBodies[j].x - simBodies[i].x;
+                    const dy = simBodies[j].y - simBodies[i].y;
+                    const r = Math.sqrt(dx * dx + dy * dy);
+                    pe -= simBodies[i].mass * simBodies[j].mass / r;
+                }
+            }
+
+            energies.push(ke + pe);
+            stepMethod(simBodies, method, dt, [[], [], []]);
+        }
+
+        const maxE = Math.max(...energies);
+        const minE = Math.min(...energies);
+        const range = maxE - minE || 1;
+
+        ctx.beginPath();
+        const startX = 0;
+        const startY = canvas.height - ((energies[0] - minE) / range) * (canvas.height - 40) - 20;
+        ctx.moveTo(startX, startY);
+
+        for (let i = 1; i < energies.length; i++) {
+            const x = (i / (steps - 1)) * canvas.width;
+            const y = canvas.height - ((energies[i] - minE) / range) * (canvas.height - 40) - 20;
+            ctx.lineTo(x, y);
+        }
+
+        ctx.strokeStyle = colors[mIndex];
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+    });
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '14px Arial';
+    ctx.fillText('能量守恒对比', 12, 24);
+}
+
+function restoreMainView() {
+    const canvasContainer = document.querySelector('.canvas-container');
+    canvasContainer.innerHTML = `
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas" width="800" height="600"></canvas>
+            <div class="info-panel" id="infoPanel" style="font-family: Arial, sans-serif;">
+                <div class="info-item">方法: <span id="methodInfo">RK4</span></div>
+                <div class="info-item">时间: <span id="timeInfo">0.00</span></div>
+                <div class="info-item">步数: <span id="stepInfo">0</span></div>
+                <div class="info-item">缩放: <span id="zoomInfo">150%</span></div>
+            </div>
+            <div class="view-hint">鼠标拖拽平移 | 滚轮缩放</div>
+            <div class="legend" style="font-family: Arial, sans-serif;">
+                <div class="legend-item"><div class="legend-color legend-color-1"></div> 天体 1</div>
+                <div class="legend-item"><div class="legend-color legend-color-2"></div> 天体 2</div>
+                <div class="legend-item"><div class="legend-color legend-color-3"></div> 天体 3</div>
+            </div>
+        </div>
+    `;
+
+    simulation = new ThreeBodySimulation();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    simulation = new ThreeBodySimulation();
+});
+    </script>
+</body>
+</html>
