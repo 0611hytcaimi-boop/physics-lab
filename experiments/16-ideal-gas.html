@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>理想气体分子 - 物理虚拟实验平台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--text:#e6edf3;--text2:#8b949e;--cyan:#58a6ff;--green:#3fb950;--orange:#d29922;--red:#f85149;--purple:#a371f7;--yellow:#e3b341}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.back-btn{color:var(--text2);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;transition:all .2s}
+.back-btn:hover{color:var(--text);background:var(--bg3)}
+.back-btn::before{content:'';display:inline-block;width:8px;height:8px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
+.header h1{font-size:18px;font-weight:600}.header .badge{font-size:12px;color:var(--text2);background:var(--bg3);padding:2px 10px;border-radius:10px;margin-left:auto}
+.main{display:flex;flex:1;overflow:hidden}
+.canvas-wrap{flex:1;position:relative;background:var(--bg)}
+#canvas{width:100%;height:100%;display:block}
+.panel{width:300px;background:var(--bg2);border-left:1px solid var(--border);padding:16px;overflow-y:auto;flex-shrink:0}
+.panel h2{font-size:14px;color:var(--text2);margin-bottom:12px;font-weight:500}
+.ctrl-group{margin-bottom:12px}
+.ctrl-group label{display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:4px}
+.ctrl-group label span{color:var(--cyan);font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:var(--bg3);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg2);cursor:pointer;transition:box-shadow .2s}
+input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 0 12px rgba(88,166,255,.4)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg2);cursor:pointer}
+input[type=range].accent-red::-webkit-slider-thumb{background:var(--red)}
+input[type=range].accent-red::-moz-range-thumb{background:var(--red)}
+.btn-row{display:flex;gap:8px;margin-bottom:16px}
+.btn{padding:8px 18px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit;flex:1}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{box-shadow:0 0 16px rgba(63,185,80,.35)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{box-shadow:0 0 16px rgba(248,81,73,.35)}
+.readout{border-top:1px solid var(--border);padding-top:12px;margin-top:4px}
+.readout-row{display:flex;justify-content:space-between;font-size:13px;padding:2px 0}
+.readout-row .label{color:var(--text2)}
+.readout-row .value{font-family:'JetBrains Mono',monospace;font-weight:500}
+.val-cyan{color:var(--cyan)}.val-green{color:var(--green)}.val-orange{color:var(--orange)}.val-red{color:var(--red)}.val-purple{color:var(--purple)}.val-yellow{color:var(--yellow)}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-track{background:transparent}
+.panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+@media(max-width:768px){.main{flex-direction:column}.panel{width:100%;max-height:40vh;border-left:none;border-top:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="../index.html" class="back-btn">返回</a>
+  <h1>理想气体分子运动</h1>
+  <span class="badge">Ideal Gas</span>
+</div>
+<div class="main">
+  <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+  <div class="panel">
+    <h2>参数控制</h2>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="playBtn">⏸ 暂停</button>
+      <button class="btn btn-danger" id="resetBtn">↺ 重置</button>
+    </div>
+    <div class="ctrl-group">
+      <label>温度 T <span id="tempVal">300</span> K</label>
+      <input type="range" id="tempSlider" min="100" max="1000" step="10" value="300" class="accent-red">
+    </div>
+    <div class="ctrl-group">
+      <label>分子数 N <span id="nVal">80</span></label>
+      <input type="range" id="nSlider" min="20" max="200" step="5" value="80">
+    </div>
+    <div class="ctrl-group">
+      <label>容器大小 <span id="sizeVal">100</span>%</label>
+      <input type="range" id="sizeSlider" min="50" max="150" step="5" value="100">
+    </div>
+    <div class="readout">
+      <h2>实时数据</h2>
+      <div class="readout-row"><span class="label">平均动能</span><span class="value val-cyan" id="rKE">—</span></div>
+      <div class="readout-row"><span class="label">均方根速度</span><span class="value val-green" id="rRMS">— m/s</span></div>
+      <div class="readout-row"><span class="label">压强 P</span><span class="value val-orange" id="rP">—</span></div>
+      <div class="readout-row"><span class="label">容器体积</span><span class="value val-purple" id="rV">—</span></div>
+    </div>
+  </div>
+</div>
+<script>
+const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
+const playBtn=document.getElementById('playBtn'),resetBtn=document.getElementById('resetBtn');
+const tempSlider=document.getElementById('tempSlider'),nSlider=document.getElementById('nSlider'),sizeSlider=document.getElementById('sizeSlider');
+const rKE=document.getElementById('rKE'),rRMS=document.getElementById('rRMS'),rP=document.getElementById('rP'),rV=document.getElementById('rV');
+const tempVal=document.getElementById('tempVal'),nVal=document.getElementById('nVal'),sizeVal=document.getElementById('sizeVal');
+
+let W,H,running=true;
+let particles=[];
+let boxL,boxT,boxR,boxB;
+let collisionCount=0;
+let speedHistory=[];
+
+function resize(){
+  const r=canvas.parentElement.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  W=r.width;H=r.height;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  initParticles();
+}
+window.addEventListener('resize',resize);
+
+function initParticles(){
+  const N=+nSlider.value;
+  const s=+sizeSlider.value/100;
+  const margin=40;
+  boxL=margin;boxR=W-margin;boxT=margin;boxB=H-margin;
+  const cw=(boxR-boxL)*s,ch=(boxB-boxT)*s;
+  const cx=(boxL+boxR)/2,cy=(boxT+boxB)/2;
+  boxL=cx-cw/2;boxR=cx+cw/2;boxT=cy-ch/2;boxB=cy+ch/2;
+  particles=[];
+  const T=+tempSlider.value;
+  const vScale=Math.sqrt(T/300)*2;
+  for(let i=0;i<N;i++){
+    const x=boxL+20+Math.random()*(boxR-boxL-40);
+    const y=boxT+20+Math.random()*(boxB-boxT-40);
+    const angle=Math.random()*Math.PI*2;
+    const speed=vScale*(0.5+Math.random());
+    particles.push({x,y,vx:speed*Math.cos(angle),vy:speed*Math.sin(angle),r:3});
+  }
+  collisionCount=0;
+  speedHistory=[];
+}
+
+function update(dt){
+  if(!running)return;
+  const T=+tempSlider.value;
+  const vScale=Math.sqrt(T/300);
+  for(const p of particles){
+    p.x+=p.vx*dt*60;
+    p.y+=p.vy*dt*60;
+    // Wall collisions
+    if(p.x-p.r<boxL){p.x=boxL+p.r;p.vx=-p.vx;collisionCount++}
+    if(p.x+p.r>boxR){p.x=boxR-p.r;p.vx=-p.vx;collisionCount++}
+    if(p.y-p.r<boxT){p.y=boxT+p.r;p.vy=-p.vy;collisionCount++}
+    if(p.y+p.r>boxB){p.y=boxB-p.r;p.vy=-p.vy;collisionCount++}
+  }
+  // Particle-particle collisions (simplified, only nearby)
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const a=particles[i],b=particles[j];
+      const dx=b.x-a.x,dy=b.y-a.y;
+      const dist=Math.hypot(dx,dy);
+      const minDist=a.r+b.r;
+      if(dist<minDist&&dist>0.01){
+        const nx=dx/dist,ny=dy/dist;
+        const dvx=a.vx-b.vx,dvy=a.vy-b.vy;
+        const relV=dvx*nx+dvy*ny;
+        if(relV>0){
+          a.vx-=relV*nx;a.vy-=relV*ny;
+          b.vx+=relV*nx;b.vy+=relV*ny;
+          const overlap=(minDist-dist)/2;
+          a.x-=overlap*nx;a.y-=overlap*ny;
+          b.x+=overlap*nx;b.y+=overlap*ny;
+        }
+      }
+    }
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(48,54,61,0.3)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  // Box
+  ctx.strokeStyle='rgba(230,237,243,0.4)';ctx.lineWidth=2;
+  ctx.strokeRect(boxL,boxT,boxR-boxL,boxB-boxT);
+  // Particles
+  const T=+tempSlider.value;
+  for(const p of particles){
+    const speed=Math.hypot(p.vx,p.vy);
+    const t=Math.min(1,speed/5);
+    const r=Math.round(88+t*167);
+    const g=Math.round(166-t*166);
+    const b=Math.round(255-t*255);
+    ctx.fillStyle=`rgb(${r},${g},${b})`;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+  }
+  // Speed histogram (bottom right)
+  const hx=W-180,hy=boxB-130,hw=150,hh=100;
+  ctx.fillStyle='rgba(22,27,34,0.9)';ctx.fillRect(hx,hy,hw,hh);
+  ctx.strokeStyle='var(--border)';ctx.lineWidth=1;ctx.strokeRect(hx,hy,hw,hh);
+  ctx.fillStyle='rgba(139,148,158,0.4)';ctx.font='8px sans-serif';ctx.textAlign='left';
+  ctx.fillText('速度分布',hx+4,hy+10);
+  // Compute histogram
+  const speeds=particles.map(p=>Math.hypot(p.vx,p.vy));
+  const maxV=Math.max(1,...speeds);
+  const bins=15;
+  const hist=new Array(bins).fill(0);
+  for(const s of speeds){
+    const idx=Math.min(bins-1,Math.floor(s/maxV*bins));
+    hist[idx]++;
+  }
+  const maxCount=Math.max(1,...hist);
+  for(let i=0;i<bins;i++){
+    const barH=(hist[i]/maxCount)*(hh-20);
+    ctx.fillStyle='rgba(88,166,255,0.6)';
+    ctx.fillRect(hx+10+i*(hw-20)/bins,hy+hh-10-barH,(hw-20)/bins-1,barH);
+  }
+  // Readouts
+  const avgKE=speeds.reduce((s,v)=>s+v*v,0)/particles.length/2;
+  const rms=Math.sqrt(speeds.reduce((s,v)=>s+v*v,0)/particles.length);
+  const volume=(boxR-boxL)*(boxB-boxT);
+  // Pressure: P = N*m*v_rms^2 / (3*V)  (2D version: P = N*m*v_rms^2 / (2*V))
+  const pressure=particles.length*rms*rms/(2*volume)*100;
+  rKE.textContent=avgKE.toFixed(2);
+  rRMS.textContent=rms.toFixed(1);
+  rP.textContent=pressure.toFixed(1);
+  rV.textContent=volume.toFixed(0)+' px²';
+}
+
+function resetSim(){
+  initParticles();
+}
+function togglePlay(){
+  running=!running;
+  playBtn.textContent=running?'⏸ 暂停':'▶ 运行';
+  playBtn.classList.toggle('active',running);
+}
+playBtn.addEventListener('click',togglePlay);
+resetBtn.addEventListener('click',resetSim);
+tempSlider.addEventListener('input',()=>{tempVal.textContent=(+tempSlider.value).toFixed(0);initParticles()});
+nSlider.addEventListener('input',()=>{nVal.textContent=(+nSlider.value).toFixed(0);initParticles()});
+sizeSlider.addEventListener('input',()=>{sizeVal.textContent=(+sizeSlider.value).toFixed(0)+'%';initParticles()});
+document.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Space'){e.preventDefault();togglePlay()}});
+
+let lastTime=0;
+const FIXED_DT=1/60;
+function loop(t){
+  requestAnimationFrame(loop);
+  if(lastTime===0)lastTime=t;
+  let ft=(t-lastTime)/1000;lastTime=t;
+  if(ft>.1)ft=.1;
+  const steps=Math.ceil(ft/FIXED_DT);
+  for(let i=0;i<steps;i++)update(FIXED_DT);
+  draw();
+}
+resize();initParticles();loop(0);
+</script>
+</body>
+</html>
