@@ -1,0 +1,1558 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浮力与沉降速度实验 - 物理教学</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #E3F2FD 0%, #F3E5F5 50%, #E8F5E9 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .back-btn{
+  color:var(--text2);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:6px;
+  transition:all .2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 99;
+}
+.back-btn:hover{
+  color:var(--text);
+  background:var(--bg3);
+}
+.back-btn::before{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(45deg);
+}
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            color: #1565C0;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        .mode-switch {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .mode-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #1565C0, #1976D2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(21, 101, 192, 0.4);
+        }
+
+        .mode-btn:not(.active) {
+            background: white;
+            color: #666;
+            border: 2px solid #E0E0E0;
+        }
+
+        .mode-btn:hover:not(.active) {
+            border-color: #1565C0;
+            color: #1565C0;
+        }
+
+        .main-content {
+            display: grid;
+            gap: 25px;
+        }
+
+        .single-mode {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 25px;
+        }
+
+        .compare-mode {
+            display: grid;
+            grid-template-columns: 1fr 1fr 400px;
+            gap: 25px;
+        }
+
+        .tank-container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+        }
+
+        .tank-wrapper {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(180deg, #F5F5F5 0%, #E0E0E0 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 3px solid #BDBDBD;
+        }
+
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70%;
+            transition: background-color 0.5s ease;
+        }
+
+        .liquid.water {
+            background: linear-gradient(180deg, rgba(33, 150, 243, 0.3) 0%, rgba(33, 150, 243, 0.6) 100%);
+        }
+
+        .liquid.saltwater {
+            background: linear-gradient(180deg, rgba(66, 165, 245, 0.4) 0%, rgba(66, 165, 245, 0.7) 100%);
+        }
+
+        .liquid.oil {
+            background: linear-gradient(180deg, rgba(255, 235, 59, 0.4) 0%, rgba(255, 215, 0, 0.6) 100%);
+        }
+
+        .liquid.custom {
+            background: linear-gradient(180deg, rgba(156, 39, 176, 0.3) 0%, rgba(156, 39, 176, 0.5) 100%);
+        }
+
+        .liquid-surface {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+        }
+
+        .object {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .object.wood {
+            background: linear-gradient(135deg, #A1887F, #8D6E63);
+        }
+
+        .object.iron {
+            background: linear-gradient(135deg, #757575, #424242);
+        }
+
+        .object.plastic {
+            background: linear-gradient(135deg, #FF8A65, #FF7043);
+        }
+
+        .object.custom {
+            background: linear-gradient(135deg, #7E57C2, #5E35B1);
+        }
+
+        .force-arrow {
+            position: absolute;
+            width: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .force-arrow.gravity {
+            background: #E53935;
+        }
+
+        .force-arrow.buoyancy {
+            background: #43A047;
+        }
+
+        .force-arrow.drag {
+            background: #FF9800;
+        }
+
+        .force-arrow::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+        }
+
+        .force-arrow.gravity::after {
+            top: 100%;
+            left: -6px;
+            border-top: 10px solid #E53935;
+        }
+
+        .force-arrow.buoyancy::after {
+            bottom: 100%;
+            left: -6px;
+            border-bottom: 10px solid #43A047;
+        }
+
+        .force-arrow.drag::after {
+            bottom: 100%;
+            left: -6px;
+            border-bottom: 10px solid #FF9800;
+        }
+
+        .force-label {
+            position: absolute;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .info-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            max-height: fit-content;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-section h3::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(180deg, #1565C0, #1976D2);
+            border-radius: 2px;
+        }
+
+        .select-group {
+            margin-bottom: 15px;
+        }
+
+        .select-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .select-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #333;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .select-group select:focus {
+            outline: none;
+            border-color: #1565C0;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #1565C0;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-row .input-group {
+            flex: 1;
+        }
+
+        .slider-group {
+            margin-bottom: 15px;
+        }
+
+        .slider-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .slider-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #1565C0, #1976D2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #1565C0;
+            cursor: pointer;
+        }
+
+        .slider-value {
+            display: inline-block;
+            float: right;
+            font-weight: bold;
+            color: #1565C0;
+            font-size: 0.9rem;
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #FF7043, #FF5722);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 112, 67, 0.4);
+        }
+
+        .data-panel {
+            background: linear-gradient(135deg, #E3F2FD 0%, #E8F5E9 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .data-panel h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .data-item {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .data-item .label {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .data-item .value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #1565C0;
+        }
+
+        .data-item .unit {
+            font-size: 0.65rem;
+            color: #999;
+        }
+
+        .speed-bar-container {
+            margin-top: 8px;
+            height: 15px;
+            background: #E0E0E0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .speed-bar {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.3s ease;
+        }
+
+        .speed-bar.a {
+            background: linear-gradient(90deg, #1565C0, #1976D2);
+        }
+
+        .speed-bar.b {
+            background: linear-gradient(90deg, #43A047, #66BB6A);
+        }
+
+        .speed-ratio {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .speed-ratio strong {
+            color: #FF7043;
+            font-size: 1.1rem;
+        }
+
+        .result-section {
+            background: linear-gradient(135deg, #FFF3E0 0%, #FFECB3 100%);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .result-section .status {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .result-section .status.float {
+            color: #43A047;
+        }
+
+        .result-section .status.sink {
+            color: #E53935;
+        }
+
+        .result-section .status.suspend {
+            color: #FF9800;
+        }
+
+        .result-section .desc {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .chart-panel {
+            background: linear-gradient(135deg, #F3E5F5 0%, #E3F2FD 100%);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .chart-panel h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-color.a {
+            background: #1565C0;
+        }
+
+        .legend-color.b {
+            background: #43A047;
+        }
+
+        .principle-section {
+            background: linear-gradient(135deg, #F3E5F5 0%, #E3F2FD 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+        }
+
+        .principle-section h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+
+        .principle-item {
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            background: white;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .principle-item strong {
+            color: #1565C0;
+        }
+
+        .formula {
+            font-family: 'Times New Roman', serif;
+            font-size: 1.4rem;
+            text-align: center;
+            color: #1565C0;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+
+        .section-divider {
+            height: 1px;
+            background: #E0E0E0;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 1200px) {
+            .compare-mode {
+                grid-template-columns: 1fr 1fr;
+            }
+            .info-panel {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .single-mode, .compare-mode {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+      <a href="../index.html" class="back-btn">返回</a>
+        <header>
+            <h1>⚖️ 浮力与沉降速度实验</h1>
+            <p>探索不同液体中物体的浮沉规律</p>
+        </header>
+
+        <div class="mode-switch">
+            <button class="mode-btn active" id="singleModeBtn">单模式</button>
+            <button class="mode-btn" id="compareModeBtn">对比模式</button>
+        </div>
+
+        <div class="main-content">
+            <div class="single-mode" id="singleMode">
+                <div class="tank-container">
+                    <h3 style="color: #1565C0; margin-bottom: 15px; font-size: 1.1rem;">实验容器</h3>
+                    <div class="tank-wrapper" id="tank1">
+                        <div class="liquid water" id="liquid1">
+                            <div class="liquid-surface"></div>
+                        </div>
+                        <div class="object wood" id="object1"></div>
+                        <div class="force-arrow gravity" id="gravityArrow1"></div>
+                        <div class="force-arrow buoyancy" id="buoyancyArrow1"></div>
+                        <div class="force-arrow drag" id="dragArrow1"></div>
+                        <div class="force-label" style="color: #E53935;" id="gravityLabel1">G</div>
+                        <div class="force-label" style="color: #43A047;" id="buoyancyLabel1">F</div>
+                        <div class="force-label" style="color: #FF9800;" id="dragLabel1">f</div>
+                    </div>
+                </div>
+
+                <div class="info-panel">
+                    <div class="control-section">
+                        <h3>实验控制</h3>
+                        <div class="select-group">
+                            <label>选择液体</label>
+                            <select id="liquidSelect1">
+                                <option value="water">水 (ρ=1000 kg/m³)</option>
+                                <option value="saltwater">盐水 (ρ=1200 kg/m³)</option>
+                                <option value="oil">油 (ρ=900 kg/m³)</option>
+                                <option value="custom">自定义液体</option>
+                            </select>
+                        </div>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>液体密度 (kg/m³)</label>
+                                <input type="number" id="liquidDensityInput1" value="1000" min="1" max="5000">
+                            </div>
+                            <div class="input-group">
+                                <label>阻力系数</label>
+                                <input type="number" id="liquidDragInput1" value="0.01" step="0.01" min="0" max="1">
+                            </div>
+                        </div>
+                        <div class="select-group">
+                            <label>选择物体</label>
+                            <select id="objectSelect1">
+                                <option value="wood">木块 (ρ=600 kg/m³)</option>
+                                <option value="iron">铁块 (ρ=7800 kg/m³)</option>
+                                <option value="plastic">塑料块 (ρ=950 kg/m³)</option>
+                                <option value="custom">自定义物体</option>
+                            </select>
+                        </div>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>物体密度 (kg/m³)</label>
+                                <input type="number" id="objectDensityInput1" value="600" min="1" max="10000">
+                            </div>
+                            <div class="input-group">
+                                <label>物体体积 (m³)</label>
+                                <input type="number" id="objectVolumeInput1" value="0.0001" step="0.00001" min="0.00001" max="0.001">
+                            </div>
+                        </div>
+                        <div class="slider-group">
+                            <label>重力加速度: <span class="slider-value" id="gravityValue1">9.8</span> m/s²</label>
+                            <input type="range" id="gravitySlider1" min="1" max="20" value="9.8" step="0.1">
+                        </div>
+                        <div class="slider-group">
+                            <label>动画速度: <span class="slider-value" id="animationSpeedValue1">1.0</span>x</label>
+                            <input type="range" id="animationSpeedSlider1" min="0.1" max="3" value="1" step="0.1">
+                        </div>
+                        <button class="reset-btn" id="resetBtn1">重置实验</button>
+                    </div>
+
+                    <div class="data-panel">
+                        <h4>📊 实时数据</h4>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <div class="label">重力 G</div>
+                                <div class="value" id="gravity1">0.6</div>
+                                <div class="unit">N</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">浮力 F</div>
+                                <div class="value" id="buoyancy1">1.0</div>
+                                <div class="unit">N</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">阻力 f</div>
+                                <div class="value" id="drag1">0.0</div>
+                                <div class="unit">N</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">瞬时速度</div>
+                                <div class="value" id="velocity1">0.00</div>
+                                <div class="unit">m/s</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="status float" id="status1">上浮</div>
+                        <div class="desc" id="statusDesc1">物体密度小于液体密度，浮力大于重力</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="compare-mode" id="compareMode" style="display: none;">
+                <div class="tank-container">
+                    <h3 style="color: #1565C0; margin-bottom: 15px; font-size: 1.1rem;">液体 A</h3>
+                    <div class="tank-wrapper" id="tankA">
+                        <div class="liquid water" id="liquidA">
+                            <div class="liquid-surface"></div>
+                        </div>
+                        <div class="object" id="objectA"></div>
+                        <div class="force-arrow gravity" id="gravityArrowA"></div>
+                        <div class="force-arrow buoyancy" id="buoyancyArrowA"></div>
+                        <div class="force-arrow drag" id="dragArrowA"></div>
+                    </div>
+                    <div class="select-group" style="margin-top: 15px;">
+                        <label>选择液体 A</label>
+                        <select id="liquidSelectA">
+                            <option value="water">水</option>
+                            <option value="saltwater">盐水</option>
+                            <option value="oil">油</option>
+                            <option value="custom">自定义</option>
+                        </select>
+                    </div>
+                    <div class="input-row" style="margin-top: 10px;">
+                        <div class="input-group">
+                            <label>密度 (kg/m³)</label>
+                            <input type="number" id="liquidDensityInputA" value="1000" min="1" max="5000">
+                        </div>
+                        <div class="input-group">
+                            <label>阻力系数</label>
+                            <input type="number" id="liquidDragInputA" value="0.01" step="0.01" min="0" max="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tank-container">
+                    <h3 style="color: #43A047; margin-bottom: 15px; font-size: 1.1rem;">液体 B</h3>
+                    <div class="tank-wrapper" id="tankB">
+                        <div class="liquid saltwater" id="liquidB">
+                            <div class="liquid-surface"></div>
+                        </div>
+                        <div class="object" id="objectB"></div>
+                        <div class="force-arrow gravity" id="gravityArrowB"></div>
+                        <div class="force-arrow buoyancy" id="buoyancyArrowB"></div>
+                        <div class="force-arrow drag" id="dragArrowB"></div>
+                    </div>
+                    <div class="select-group" style="margin-top: 15px;">
+                        <label>选择液体 B</label>
+                        <select id="liquidSelectB">
+                            <option value="water">水</option>
+                            <option value="saltwater">盐水</option>
+                            <option value="oil">油</option>
+                            <option value="custom">自定义</option>
+                        </select>
+                    </div>
+                    <div class="input-row" style="margin-top: 10px;">
+                        <div class="input-group">
+                            <label>密度 (kg/m³)</label>
+                            <input type="number" id="liquidDensityInputB" value="1200" min="1" max="5000">
+                        </div>
+                        <div class="input-group">
+                            <label>阻力系数</label>
+                            <input type="number" id="liquidDragInputB" value="0.01" step="0.01" min="0" max="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-panel">
+                    <div class="control-section">
+                        <h3>对比控制</h3>
+                        <div class="select-group">
+                            <label>选择物体（两种液体共用）</label>
+                            <select id="objectSelectCompare">
+                                <option value="wood">木块 (ρ=600 kg/m³)</option>
+                                <option value="iron">铁块 (ρ=7800 kg/m³)</option>
+                                <option value="plastic">塑料块 (ρ=950 kg/m³)</option>
+                                <option value="custom">自定义物体</option>
+                            </select>
+                        </div>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>物体密度 (kg/m³)</label>
+                                <input type="number" id="objectDensityInputCompare" value="600" min="1" max="10000">
+                            </div>
+                            <div class="input-group">
+                                <label>物体体积 (m³)</label>
+                                <input type="number" id="objectVolumeInputCompare" value="0.0001" step="0.00001" min="0.00001" max="0.001">
+                            </div>
+                        </div>
+                        <div class="slider-group">
+                            <label>重力加速度: <span class="slider-value" id="gravityValueCompare">9.8</span> m/s²</label>
+                            <input type="range" id="gravitySliderCompare" min="1" max="20" value="9.8" step="0.1">
+                        </div>
+                        <div class="slider-group">
+                            <label>动画速度: <span class="slider-value" id="animationSpeedValueCompare">1.0</span>x</label>
+                            <input type="range" id="animationSpeedSliderCompare" min="0.1" max="3" value="1" step="0.1">
+                        </div>
+                        <button class="reset-btn" id="resetBtnCompare">重置对比</button>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <div class="data-panel">
+                        <h4>📊 液体 A - 实时数据</h4>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <div class="label">重力 G</div>
+                                <div class="value" id="gravityA">0.00</div>
+                                <div class="unit">N</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">浮力 F</div>
+                                <div class="value" id="buoyancyA">0.00</div>
+                                <div class="unit">N</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">阻力 f</div>
+                                <div class="value" id="dragA">0.00</div>
+                                <div class="unit">N</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">瞬时速度</div>
+                                <div class="value" id="velocityA">0.00</div>
+                                <div class="unit">m/s</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="data-panel">
+                        <h4>📊 液体 B - 实时数据</h4>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <div class="label">重力 G</div>
+                                <div class="value" id="gravityB">0.00</div>
+                                <div class="unit">N</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">浮力 F</div>
+                                <div class="value" id="buoyancyB">0.00</div>
+                                <div class="unit">N</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">阻力 f</div>
+                                <div class="value" id="dragB">0.00</div>
+                                <div class="unit">N</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">瞬时速度</div>
+                                <div class="value" id="velocityB">0.00</div>
+                                <div class="unit">m/s</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <div class="data-panel">
+                        <h4>📊 速度对比</h4>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <div class="label">液体A速度</div>
+                                <div class="value" id="speedA">0.00</div>
+                                <div class="unit">m/s</div>
+                                <div class="speed-bar-container">
+                                    <div class="speed-bar a" id="speedBarA"></div>
+                                </div>
+                            </div>
+                            <div class="data-item">
+                                <div class="label">液体B速度</div>
+                                <div class="value" id="speedB">0.00</div>
+                                <div class="unit">m/s</div>
+                                <div class="speed-bar-container">
+                                    <div class="speed-bar b" id="speedBarB"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="speed-ratio">
+                            速度比 A:B = <strong id="speedRatio">1:1</strong>
+                        </div>
+                    </div>
+
+                    <div class="section-divider"></div>
+
+                    <div class="chart-panel">
+                        <h4>📈 速度-时间曲线</h4>
+                        <div class="chart-container">
+                            <canvas class="chart-canvas" id="speedChart"></canvas>
+                        </div>
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color a"></div>
+                                <span>液体A</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color b"></div>
+                                <span>液体B</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-section">
+                        <div class="status" id="compareStatus">---</div>
+                        <div class="desc" id="compareDesc">观察两种液体中物体的运动差异</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="principle-section" style="margin-top: 25px;">
+            <h4>💡 浮力原理</h4>
+            <div class="principle-item">
+                <strong>阿基米德原理：</strong>浸在液体中的物体受到向上的浮力，浮力的大小等于物体排开液体的重量。
+            </div>
+            <div class="formula">F<sub>浮</sub> = ρ<sub>液</sub> × V<sub>排</sub> × g</div>
+            <div class="principle-item">
+                <strong>浮沉条件：</strong>
+                <ul style="margin-top: 8px; padding-left: 20px;">
+                    <li>若 ρ<sub>物</sub> < ρ<sub>液</sub> → 物体上浮，最终漂浮</li>
+                    <li>若 ρ<sub>物</sub> = ρ<sub>液</sub> → 物体悬浮在液体中</li>
+                    <li>若 ρ<sub>物</sub> > ρ<sub>液</sub> → 物体下沉</li>
+                </ul>
+            </div>
+            <div class="principle-item">
+                <strong>阻力公式：</strong>f = k × v（k为阻力系数，v为速度），阻力方向与运动方向相反。
+            </div>
+            <div class="principle-item">
+                <strong>沉降速度：</strong>物体在液体中下沉或上浮的速度与物体和液体的密度差有关，密度差越大，速度越快。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PRESET_LIQUIDS = {
+            water: { density: 1000, name: '水', color: 'water', drag: 0.01 },
+            saltwater: { density: 1200, name: '盐水', color: 'saltwater', drag: 0.01 },
+            oil: { density: 900, name: '油', color: 'oil', drag: 0.01 }
+        };
+
+        const PRESET_OBJECTS = {
+            wood: { density: 600, name: '木块', color: 'wood', volume: 0.0001 },
+            iron: { density: 7800, name: '铁块', color: 'iron', volume: 0.0001 },
+            plastic: { density: 950, name: '塑料块', color: 'plastic', volume: 0.0001 }
+        };
+
+        class BuoyancySimulator {
+            constructor(tankId, liquidId, objectId, gravityArrowId, buoyancyArrowId, dragArrowId, 
+                        gravityLabelId, buoyancyLabelId, dragLabelId) {
+                this.tank = document.getElementById(tankId);
+                this.liquid = document.getElementById(liquidId);
+                this.object = document.getElementById(objectId);
+                this.gravityArrow = document.getElementById(gravityArrowId);
+                this.buoyancyArrow = document.getElementById(buoyancyArrowId);
+                this.dragArrow = document.getElementById(dragArrowId);
+                this.gravityLabel = document.getElementById(gravityLabelId);
+                this.buoyancyLabel = document.getElementById(buoyancyLabelId);
+                this.dragLabel = document.getElementById(dragLabelId);
+                
+                this.currentLiquid = 'water';
+                this.currentObject = 'wood';
+                this.customLiquidDensity = 1000;
+                this.customLiquidDrag = 0.01;
+                this.customObjectDensity = 600;
+                this.customObjectVolume = 0.0001;
+                this.gravity = 9.8;
+                this.animationSpeed = 1;
+                
+                this.objectY = 260;
+                this.velocity = 0;
+                this.isSimulating = false;
+                this.animationId = null;
+                
+                this.speedHistory = [];
+                this.maxHistory = 50;
+            }
+
+            getLiquidDensity() {
+                if (this.currentLiquid === 'custom') {
+                    return this.customLiquidDensity;
+                }
+                return PRESET_LIQUIDS[this.currentLiquid].density;
+            }
+
+            getLiquidDrag() {
+                if (this.currentLiquid === 'custom') {
+                    return this.customLiquidDrag;
+                }
+                return PRESET_LIQUIDS[this.currentLiquid].drag;
+            }
+
+            getLiquidColor() {
+                if (this.currentLiquid === 'custom') {
+                    return 'custom';
+                }
+                return PRESET_LIQUIDS[this.currentLiquid].color;
+            }
+
+            getObjectDensity() {
+                if (this.currentObject === 'custom') {
+                    return this.customObjectDensity;
+                }
+                return PRESET_OBJECTS[this.currentObject].density;
+            }
+
+            getObjectVolume() {
+                if (this.currentObject === 'custom') {
+                    return this.customObjectVolume;
+                }
+                return PRESET_OBJECTS[this.currentObject].volume;
+            }
+
+            getObjectColor() {
+                if (this.currentObject === 'custom') {
+                    return 'custom';
+                }
+                return PRESET_OBJECTS[this.currentObject].color;
+            }
+
+            setLiquid(liquidType) {
+                this.currentLiquid = liquidType;
+                this.liquid.className = `liquid ${this.getLiquidColor()}`;
+            }
+
+            setObject(objectType) {
+                this.currentObject = objectType;
+                this.object.className = `object ${this.getObjectColor()}`;
+            }
+
+            calculateForces() {
+                const liquidDensity = this.getLiquidDensity();
+                const liquidDrag = this.getLiquidDrag();
+                const objDensity = this.getObjectDensity();
+                const objVolume = this.getObjectVolume();
+                
+                const gravity = objDensity * objVolume * this.gravity;
+                const buoyancy = liquidDensity * objVolume * this.gravity;
+                const drag = liquidDrag * Math.abs(this.velocity);
+                
+                return { gravity, buoyancy, drag };
+            }
+
+            getStatus() {
+                const liquidDensity = this.getLiquidDensity();
+                const objDensity = this.getObjectDensity();
+                
+                if (Math.abs(objDensity - liquidDensity) < 10) return 'suspend';
+                if (objDensity < liquidDensity) return 'float';
+                return 'sink';
+            }
+
+            startSimulation() {
+                if (this.isSimulating) return;
+                this.isSimulating = true;
+                this.objectY = 260;
+                this.velocity = 0;
+                this.speedHistory = [];
+                this.animate();
+            }
+
+            stopSimulation() {
+                this.isSimulating = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
+            }
+
+            reset() {
+                this.stopSimulation();
+                this.objectY = 260;
+                this.velocity = 0;
+                this.speedHistory = [];
+                this.updateDisplay();
+            }
+
+            animate() {
+                if (!this.isSimulating) return;
+
+                const liquidDensity = this.getLiquidDensity();
+                const objDensity = this.getObjectDensity();
+                const objVolume = this.getObjectVolume();
+                const liquidDrag = this.getLiquidDrag();
+                const forces = this.calculateForces();
+                
+                const netForce = forces.gravity - forces.buoyancy;
+                const dragForce = -forces.drag * Math.sign(this.velocity);
+                const totalForce = netForce + dragForce;
+                
+                const mass = objDensity * objVolume;
+                const acceleration = totalForce / mass;
+                
+                this.velocity += acceleration * 0.05 * this.animationSpeed;
+                this.velocity = Math.max(-3, Math.min(3, this.velocity));
+                
+                this.objectY += this.velocity * 2 * this.animationSpeed;
+                
+                const liquidTop = this.tank.offsetHeight * 0.3;
+                const liquidBottom = this.tank.offsetHeight;
+                const objectHeight = this.object.offsetHeight;
+                
+                if (this.objectY < liquidTop) {
+                    this.objectY = liquidTop;
+                }
+                
+                if (this.objectY + objectHeight > liquidBottom) {
+                    this.objectY = liquidBottom - objectHeight;
+                }
+                
+                this.speedHistory.push(Math.abs(this.velocity));
+                if (this.speedHistory.length > this.maxHistory) {
+                    this.speedHistory.shift();
+                }
+                
+                this.updateDisplay();
+                this.animationId = requestAnimationFrame(() => this.animate());
+            }
+
+            updateDisplay() {
+                const tankRect = this.tank.getBoundingClientRect();
+                
+                this.object.style.top = `${this.objectY}px`;
+                this.object.style.left = `${(tankRect.width - 60) / 2}px`;
+                
+                const forces = this.calculateForces();
+                const forceScale = 20;
+                
+                const gravityLength = Math.min(forces.gravity * forceScale, 60);
+                const buoyancyLength = Math.min(forces.buoyancy * forceScale, 60);
+                const dragLength = Math.min(forces.drag * 50, 40);
+                
+                const objectCenterX = (tankRect.width - 60) / 2 + 30;
+                const objectTop = this.objectY;
+                const objectBottom = this.objectY + 60;
+                
+                this.gravityArrow.style.left = `${objectCenterX - 1.5}px`;
+                this.gravityArrow.style.top = `${objectTop}px`;
+                this.gravityArrow.style.height = `${gravityLength}px`;
+                
+                this.buoyancyArrow.style.left = `${objectCenterX - 1.5}px`;
+                this.buoyancyArrow.style.top = `${objectBottom - buoyancyLength}px`;
+                this.buoyancyArrow.style.height = `${buoyancyLength}px`;
+                
+                const dragDirection = this.velocity > 0 ? 'down' : 'up';
+                if (dragDirection === 'down') {
+                    this.dragArrow.style.left = `${objectCenterX + 15}px`;
+                    this.dragArrow.style.top = `${objectTop}px`;
+                    this.dragArrow.style.height = `${dragLength}px`;
+                    this.dragArrow.style.transform = 'rotate(180deg)';
+                } else {
+                    this.dragArrow.style.left = `${objectCenterX + 15}px`;
+                    this.dragArrow.style.top = `${objectBottom - dragLength}px`;
+                    this.dragArrow.style.height = `${dragLength}px`;
+                    this.dragArrow.style.transform = 'rotate(0deg)';
+                }
+                
+                if (this.gravityLabel) {
+                    this.gravityLabel.style.left = `${objectCenterX + 5}px`;
+                    this.gravityLabel.style.top = `${objectTop + gravityLength / 2 - 10}px`;
+                }
+                
+                if (this.buoyancyLabel) {
+                    this.buoyancyLabel.style.left = `${objectCenterX + 5}px`;
+                    this.buoyancyLabel.style.top = `${objectBottom - buoyancyLength / 2 - 10}px`;
+                }
+                
+                if (this.dragLabel) {
+                    this.dragLabel.style.left = `${objectCenterX + 20}px`;
+                    this.dragLabel.style.top = `${objectTop + gravityLength + 5}px`;
+                }
+            }
+
+            getSpeed() {
+                return Math.abs(this.velocity).toFixed(2);
+            }
+
+            getForces() {
+                return this.calculateForces();
+            }
+        }
+
+        const singleSimulator = new BuoyancySimulator(
+            'tank1', 'liquid1', 'object1', 'gravityArrow1', 'buoyancyArrow1', 'dragArrow1',
+            'gravityLabel1', 'buoyancyLabel1', 'dragLabel1'
+        );
+
+        const compareSimulatorA = new BuoyancySimulator(
+            'tankA', 'liquidA', 'objectA', 'gravityArrowA', 'buoyancyArrowA', 'dragArrowA',
+            null, null, null
+        );
+
+        const compareSimulatorB = new BuoyancySimulator(
+            'tankB', 'liquidB', 'objectB', 'gravityArrowB', 'buoyancyArrowB', 'dragArrowB',
+            null, null, null
+        );
+
+        let chartCtx = null;
+        let chartAnimationId = null;
+
+        function drawSpeedChart() {
+            if (!chartCtx) {
+                chartCtx = document.getElementById('speedChart').getContext('2d');
+            }
+            
+            const canvas = chartCtx.canvas;
+            const width = canvas.width = canvas.offsetWidth;
+            const height = canvas.height = canvas.offsetHeight;
+            
+            chartCtx.clearRect(0, 0, width, height);
+            
+            chartCtx.strokeStyle = '#E0E0E0';
+            chartCtx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = (height / 5) * i;
+                chartCtx.beginPath();
+                chartCtx.moveTo(0, y);
+                chartCtx.lineTo(width, y);
+                chartCtx.stroke();
+            }
+            
+            const historyA = compareSimulatorA.speedHistory;
+            const historyB = compareSimulatorB.speedHistory;
+            const maxSpeed = 3;
+            
+            if (historyA.length > 1) {
+                chartCtx.strokeStyle = '#1565C0';
+                chartCtx.lineWidth = 2;
+                chartCtx.beginPath();
+                for (let i = 0; i < historyA.length; i++) {
+                    const x = (width / (compareSimulatorA.maxHistory - 1)) * i;
+                    const y = height - (historyA[i] / maxSpeed) * height;
+                    if (i === 0) {
+                        chartCtx.moveTo(x, y);
+                    } else {
+                        chartCtx.lineTo(x, y);
+                    }
+                }
+                chartCtx.stroke();
+            }
+            
+            if (historyB.length > 1) {
+                chartCtx.strokeStyle = '#43A047';
+                chartCtx.lineWidth = 2;
+                chartCtx.beginPath();
+                for (let i = 0; i < historyB.length; i++) {
+                    const x = (width / (compareSimulatorB.maxHistory - 1)) * i;
+                    const y = height - (historyB[i] / maxSpeed) * height;
+                    if (i === 0) {
+                        chartCtx.moveTo(x, y);
+                    } else {
+                        chartCtx.lineTo(x, y);
+                    }
+                }
+                chartCtx.stroke();
+            }
+            
+            chartAnimationId = requestAnimationFrame(drawSpeedChart);
+        }
+
+        function updateSingleModeData() {
+            const forces = singleSimulator.getForces();
+            
+            document.getElementById('gravity1').textContent = forces.gravity.toFixed(2);
+            document.getElementById('buoyancy1').textContent = forces.buoyancy.toFixed(2);
+            document.getElementById('drag1').textContent = forces.drag.toFixed(2);
+            document.getElementById('velocity1').textContent = singleSimulator.getSpeed();
+            
+            const status = singleSimulator.getStatus();
+            const statusEl = document.getElementById('status1');
+            const descEl = document.getElementById('statusDesc1');
+            
+            statusEl.className = `status ${status}`;
+            
+            if (status === 'float') {
+                statusEl.textContent = '上浮';
+                descEl.textContent = '物体密度小于液体密度，浮力大于重力';
+            } else if (status === 'suspend') {
+                statusEl.textContent = '悬浮';
+                descEl.textContent = '物体密度等于液体密度，浮力等于重力';
+            } else {
+                statusEl.textContent = '下沉';
+                descEl.textContent = '物体密度大于液体密度，浮力小于重力';
+            }
+        }
+
+        function updateCompareModeData() {
+            const forcesA = compareSimulatorA.getForces();
+            const forcesB = compareSimulatorB.getForces();
+            const speedA = parseFloat(compareSimulatorA.getSpeed());
+            const speedB = parseFloat(compareSimulatorB.getSpeed());
+            
+            document.getElementById('gravityA').textContent = forcesA.gravity.toFixed(2);
+            document.getElementById('buoyancyA').textContent = forcesA.buoyancy.toFixed(2);
+            document.getElementById('dragA').textContent = forcesA.drag.toFixed(2);
+            document.getElementById('velocityA').textContent = speedA.toFixed(2);
+            
+            document.getElementById('gravityB').textContent = forcesB.gravity.toFixed(2);
+            document.getElementById('buoyancyB').textContent = forcesB.buoyancy.toFixed(2);
+            document.getElementById('dragB').textContent = forcesB.drag.toFixed(2);
+            document.getElementById('velocityB').textContent = speedB.toFixed(2);
+            
+            document.getElementById('speedA').textContent = speedA.toFixed(2);
+            document.getElementById('speedB').textContent = speedB.toFixed(2);
+            
+            const maxSpeed = 3;
+            const barWidthA = Math.min((speedA / maxSpeed) * 100, 100);
+            const barWidthB = Math.min((speedB / maxSpeed) * 100, 100);
+            
+            document.getElementById('speedBarA').style.width = `${barWidthA}%`;
+            document.getElementById('speedBarB').style.width = `${barWidthB}%`;
+            
+            let ratioText = '1:1';
+            if (speedB > 0.01) {
+                const ratio = speedA / speedB;
+                if (ratio > 0) {
+                    ratioText = `${ratio.toFixed(1)}:1`;
+                }
+            } else if (speedA > 0.01) {
+                ratioText = `1:0`;
+            }
+            document.getElementById('speedRatio').textContent = ratioText;
+            
+            const statusA = compareSimulatorA.getStatus();
+            const statusB = compareSimulatorB.getStatus();
+            
+            const statusEl = document.getElementById('compareStatus');
+            const descEl = document.getElementById('compareDesc');
+            
+            if (statusA === statusB) {
+                statusEl.textContent = statusA === 'float' ? '两者都上浮' : statusA === 'suspend' ? '两者都悬浮' : '两者都下沉';
+                statusEl.className = `status ${statusA}`;
+            } else {
+                statusEl.textContent = '状态不同';
+                statusEl.className = 'status suspend';
+            }
+            
+            const nameA = compareSimulatorA.currentLiquid === 'custom' ? '自定义液体' : PRESET_LIQUIDS[compareSimulatorA.currentLiquid].name;
+            const nameB = compareSimulatorB.currentLiquid === 'custom' ? '自定义液体' : PRESET_LIQUIDS[compareSimulatorB.currentLiquid].name;
+            descEl.textContent = `液体A: ${nameA} | 液体B: ${nameB}`;
+        }
+
+        document.getElementById('singleModeBtn').addEventListener('click', () => {
+            document.getElementById('singleModeBtn').classList.add('active');
+            document.getElementById('compareModeBtn').classList.remove('active');
+            document.getElementById('singleMode').style.display = 'grid';
+            document.getElementById('compareMode').style.display = 'none';
+            if (chartAnimationId) {
+                cancelAnimationFrame(chartAnimationId);
+                chartAnimationId = null;
+            }
+        });
+
+        document.getElementById('compareModeBtn').addEventListener('click', () => {
+            document.getElementById('compareModeBtn').classList.add('active');
+            document.getElementById('singleModeBtn').classList.remove('active');
+            document.getElementById('singleMode').style.display = 'none';
+            document.getElementById('compareMode').style.display = 'grid';
+            compareSimulatorA.startSimulation();
+            compareSimulatorB.startSimulation();
+            drawSpeedChart();
+        });
+
+        document.getElementById('liquidSelect1').addEventListener('change', (e) => {
+            singleSimulator.setLiquid(e.target.value);
+            const preset = PRESET_LIQUIDS[e.target.value];
+            if (preset) {
+                document.getElementById('liquidDensityInput1').value = preset.density;
+                document.getElementById('liquidDragInput1').value = preset.drag;
+                singleSimulator.customLiquidDensity = preset.density;
+                singleSimulator.customLiquidDrag = preset.drag;
+            }
+            singleSimulator.startSimulation();
+        });
+
+        document.getElementById('liquidDensityInput1').addEventListener('input', (e) => {
+            singleSimulator.customLiquidDensity = parseFloat(e.target.value) || 1000;
+            singleSimulator.startSimulation();
+        });
+
+        document.getElementById('liquidDragInput1').addEventListener('input', (e) => {
+            singleSimulator.customLiquidDrag = parseFloat(e.target.value) || 0.1;
+            singleSimulator.startSimulation();
+        });
+
+        document.getElementById('objectSelect1').addEventListener('change', (e) => {
+            singleSimulator.setObject(e.target.value);
+            const preset = PRESET_OBJECTS[e.target.value];
+            if (preset) {
+                document.getElementById('objectDensityInput1').value = preset.density;
+                document.getElementById('objectVolumeInput1').value = preset.volume;
+                singleSimulator.customObjectDensity = preset.density;
+                singleSimulator.customObjectVolume = preset.volume;
+            }
+            singleSimulator.startSimulation();
+        });
+
+        document.getElementById('objectDensityInput1').addEventListener('input', (e) => {
+            singleSimulator.customObjectDensity = parseFloat(e.target.value) || 600;
+            singleSimulator.startSimulation();
+        });
+
+        document.getElementById('objectVolumeInput1').addEventListener('input', (e) => {
+            singleSimulator.customObjectVolume = parseFloat(e.target.value) || 0.0001;
+            singleSimulator.startSimulation();
+        });
+
+        document.getElementById('gravitySlider1').addEventListener('input', (e) => {
+            singleSimulator.gravity = parseFloat(e.target.value);
+            document.getElementById('gravityValue1').textContent = e.target.value;
+            singleSimulator.startSimulation();
+        });
+
+        document.getElementById('animationSpeedSlider1').addEventListener('input', (e) => {
+            singleSimulator.animationSpeed = parseFloat(e.target.value);
+            document.getElementById('animationSpeedValue1').textContent = e.target.value;
+        });
+
+        document.getElementById('resetBtn1').addEventListener('click', () => {
+            singleSimulator.reset();
+            updateSingleModeData();
+        });
+
+        document.getElementById('liquidSelectA').addEventListener('change', (e) => {
+            compareSimulatorA.setLiquid(e.target.value);
+            const preset = PRESET_LIQUIDS[e.target.value];
+            if (preset) {
+                document.getElementById('liquidDensityInputA').value = preset.density;
+                document.getElementById('liquidDragInputA').value = preset.drag;
+                compareSimulatorA.customLiquidDensity = preset.density;
+                compareSimulatorA.customLiquidDrag = preset.drag;
+            }
+            compareSimulatorA.startSimulation();
+        });
+
+        document.getElementById('liquidDensityInputA').addEventListener('input', (e) => {
+            compareSimulatorA.customLiquidDensity = parseFloat(e.target.value) || 1000;
+            compareSimulatorA.startSimulation();
+        });
+
+        document.getElementById('liquidDragInputA').addEventListener('input', (e) => {
+            compareSimulatorA.customLiquidDrag = parseFloat(e.target.value) || 0.1;
+            compareSimulatorA.startSimulation();
+        });
+
+        document.getElementById('liquidSelectB').addEventListener('change', (e) => {
+            compareSimulatorB.setLiquid(e.target.value);
+            const preset = PRESET_LIQUIDS[e.target.value];
+            if (preset) {
+                document.getElementById('liquidDensityInputB').value = preset.density;
+                document.getElementById('liquidDragInputB').value = preset.drag;
+                compareSimulatorB.customLiquidDensity = preset.density;
+                compareSimulatorB.customLiquidDrag = preset.drag;
+            }
+            compareSimulatorB.startSimulation();
+        });
+
+        document.getElementById('liquidDensityInputB').addEventListener('input', (e) => {
+            compareSimulatorB.customLiquidDensity = parseFloat(e.target.value) || 1000;
+            compareSimulatorB.startSimulation();
+        });
+
+        document.getElementById('liquidDragInputB').addEventListener('input', (e) => {
+            compareSimulatorB.customLiquidDrag = parseFloat(e.target.value) || 0.1;
+            compareSimulatorB.startSimulation();
+        });
+
+        document.getElementById('objectSelectCompare').addEventListener('change', (e) => {
+            compareSimulatorA.setObject(e.target.value);
+            compareSimulatorB.setObject(e.target.value);
+            const preset = PRESET_OBJECTS[e.target.value];
+            if (preset) {
+                document.getElementById('objectDensityInputCompare').value = preset.density;
+                document.getElementById('objectVolumeInputCompare').value = preset.volume;
+                compareSimulatorA.customObjectDensity = preset.density;
+                compareSimulatorA.customObjectVolume = preset.volume;
+                compareSimulatorB.customObjectDensity = preset.density;
+                compareSimulatorB.customObjectVolume = preset.volume;
+            }
+            compareSimulatorA.startSimulation();
+            compareSimulatorB.startSimulation();
+        });
+
+        document.getElementById('objectDensityInputCompare').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value) || 600;
+            compareSimulatorA.customObjectDensity = val;
+            compareSimulatorB.customObjectDensity = val;
+            compareSimulatorA.startSimulation();
+            compareSimulatorB.startSimulation();
+        });
+
+        document.getElementById('objectVolumeInputCompare').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value) || 0.0001;
+            compareSimulatorA.customObjectVolume = val;
+            compareSimulatorB.customObjectVolume = val;
+            compareSimulatorA.startSimulation();
+            compareSimulatorB.startSimulation();
+        });
+
+        document.getElementById('gravitySliderCompare').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            compareSimulatorA.gravity = val;
+            compareSimulatorB.gravity = val;
+            document.getElementById('gravityValueCompare').textContent = e.target.value;
+            compareSimulatorA.startSimulation();
+            compareSimulatorB.startSimulation();
+        });
+
+        document.getElementById('animationSpeedSliderCompare').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            compareSimulatorA.animationSpeed = val;
+            compareSimulatorB.animationSpeed = val;
+            document.getElementById('animationSpeedValueCompare').textContent = e.target.value;
+        });
+
+        document.getElementById('resetBtnCompare').addEventListener('click', () => {
+            compareSimulatorA.reset();
+            compareSimulatorB.reset();
+            updateCompareModeData();
+        });
+
+        setInterval(updateSingleModeData, 100);
+        setInterval(updateCompareModeData, 100);
+
+        updateSingleModeData();
+        singleSimulator.startSimulation();
+    </script>
+</body>
+</html>
