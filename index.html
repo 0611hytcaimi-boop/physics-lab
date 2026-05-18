@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物理虚拟实验平台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--text:#e6edf3;--text2:#8b949e;--cyan:#58a6ff;--green:#3fb950;--orange:#d29922;--red:#f85149;--purple:#a371f7;--yellow:#e3b341}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif}
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:30px 40px;text-align:center}
+.header h1{font-size:32px;font-weight:700;background:linear-gradient(135deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header p{color:var(--text2);margin-top:8px;font-size:15px}
+.header .badge{display:inline-block;margin-top:10px;padding:4px 16px;background:var(--bg3);color:var(--text2);border-radius:20px;font-size:12px;border:1px solid var(--border)}
+/* Filters */
+.filters{display:flex;justify-content:center;gap:6px;padding:16px 20px;flex-wrap:wrap;background:var(--bg);border-bottom:1px solid var(--border)}
+.filter-btn{padding:6px 16px;border:1px solid var(--border);border-radius:20px;background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:all .2s;font-family:inherit}
+.filter-btn:hover{color:var(--text);border-color:var(--text2)}
+.filter-btn.active{background:var(--cyan);color:#fff;border-color:var(--cyan)}
+/* Grid */
+.grid{padding:30px;max-width:1400px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;cursor:pointer;transition:all .3s;text-decoration:none;color:var(--text);display:flex;flex-direction:column;position:relative;overflow:hidden}
+.card:hover{transform:translateY(-4px);border-color:var(--cyan);box-shadow:0 8px 30px rgba(88,166,255,.15)}
+.card-number{font-size:11px;color:var(--text2);font-weight:600;margin-bottom:6px}
+.card-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.card-desc{font-size:13px;color:var(--text2);line-height:1.4;flex:1}
+.card-category{display:inline-block;margin-top:10px;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:500;align-self:flex-start}
+.cat-mechanics{background:rgba(88,166,255,0.15);color:var(--cyan)}
+.cat-em{background:rgba(163,113,247,0.15);color:var(--purple)}
+.cat-wave{background:rgba(63,185,80,0.15);color:var(--green)}
+.cat-thermo{background:rgba(210,153,34,0.15);color:var(--orange)}
+.cat-optics{background:rgba(248,81,73,0.15);color:var(--red)}
+.card:hover .card-number{color:var(--cyan)}
+/* Hero decoration */
+.hero-deco{position:absolute;top:0;right:0;width:100px;height:100px;opacity:0.03;pointer-events:none}
+/* Footer */
+.footer{text-align:center;padding:20px;color:var(--text2);font-size:12px;border-top:1px solid var(--border);margin-top:20px}
+.footer span{color:var(--cyan)}
+@media(max-width:768px){
+  .header{padding:20px}.header h1{font-size:24px}
+  .grid{padding:16px;grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚛ 物理虚拟实验平台</h1>
+  <p>21 个交互式物理模拟实验 · 纯前端 · 零依赖</p>
+  <span class="badge">点击卡片开始实验</span>
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" data-cat="all">全部</button>
+  <button class="filter-btn" data-cat="mechanics">力学</button>
+  <button class="filter-btn" data-cat="em">电磁学</button>
+  <button class="filter-btn" data-cat="wave">波动</button>
+  <button class="filter-btn" data-cat="thermo">热学与流体</button>
+  <button class="filter-btn" data-cat="optics">光学</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="footer">
+  物理虚拟实验平台 · Built with <span>pure HTML/CSS/JS</span> · 无外部依赖
+</div>
+
+<script>
+const experiments=[
+  {id:'01',file:'01-electrostatic-field',title:'静电场',desc:'库仑定律 · 电场线 · 等势面 · 交互式电荷放置',cat:'em'},
+  {id:'02',file:'02-water-wave-interference',title:'水波干涉',desc:'2D波动方程 · 双源干涉 · 有限差分模拟',cat:'wave'},
+  {id:'03',file:'03-newtons-laws',title:'牛顿定律',desc:'F=ma · 摩擦力 · 力矢量可视化 · 动摩擦与静摩擦',cat:'mechanics'},
+  {id:'04',file:'04-projectile-motion',title:'平抛与斜抛',desc:'抛体运动 · 空气阻力 · 轨迹对比 · 速度矢量',cat:'mechanics'},
+  {id:'05',file:'05-wave-interference-diffraction',title:'波的干涉与衍射',desc:'惠更斯原理 · 双缝/单缝 · 衍射图样',cat:'wave'},
+  {id:'06',file:'06-spring-oscillator-shm',title:'弹簧振子简谐运动',desc:'胡克定律 · 阻尼振动 · 能量守恒 · 相空间',cat:'mechanics'},
+  {id:'07',file:'07-buoyancy',title:'浮力实验',desc:'阿基米德原理 · 浮力与重力 · 沉浮状态',cat:'thermo'},
+  {id:'08',file:'08-charge-in-em-fields',title:'电荷在电磁场中的运动',desc:'洛伦兹力 · Boris积分器 · 磁场回旋',cat:'em'},
+  {id:'09',file:'09-two-ball-collision',title:'双小球刚体碰撞',desc:'动量守恒 · 弹性/非弹性碰撞 · 恢复系数',cat:'mechanics'},
+  {id:'10',file:'10-double-pendulum-chaos',title:'双摆混沌运动',desc:'拉格朗日力学 · RK4 · 混沌轨迹 · 敏感性',cat:'mechanics'},
+  {id:'11',file:'11-buoyancy-settling-velocity',title:'浮力与沉降速度',desc:'斯托克斯定律 · 终端速度 · 粘度 · 雷诺数',cat:'thermo'},
+  {id:'12',file:'12-simple-pendulum',title:'单摆运动',desc:'简谐运动 · 小角近似 · 周期 · 能量转换',cat:'mechanics'},
+  {id:'13',file:'13-photoelectric-effect',title:'光电效应',desc:'光子能量 · 逸出功 · 截止电压 · Eₖ-f 图',cat:'optics'},
+  {id:'14',file:'14-electromagnetic-induction',title:'电磁感应',desc:'法拉第定律 · 磁通量 · 感应电动势 · 交流发电机',cat:'em'},
+  {id:'15',file:'15-free-fall',title:'自由落体运动',desc:'重力加速度 · 空气阻力 · 终端速度 · h-t图',cat:'mechanics'},
+  {id:'16',file:'16-ideal-gas',title:'理想气体分子',desc:'分子运动论 · 温度 · 压强 · 速度分布直方图',cat:'thermo'},
+  {id:'17',file:'17-color-light-mixing',title:'色光混合',desc:'RGB 加色混合 · 三原色 · 叠加显示',cat:'optics'},
+  {id:'18',file:'18-polarized-light',title:'偏振光实验',desc:'马吕斯定律 · 偏振片 · 光强度变化',cat:'optics'},
+  {id:'19',file:'19-three-body-problem',title:'三体运动',desc:'万有引力 · RK4 · 混沌轨道 · 8字形/对称/混沌预设',cat:'mechanics'},
+  {id:'20',file:'20-voltammetry-ohms-law',title:'伏安法测电阻',desc:'欧姆定律 · 电路模拟 · 电压/电流/电阻测量',cat:'em'},
+  {id:'21',file:'21-doppler-effect',title:'多普勒效应',desc:'频移 · 波源运动 · 观测频率变化 · 波前',cat:'wave'}
+];
+
+const catLabels={
+  mechanics:'力学',em:'电磁学',wave:'波动',thermo:'热学与流体',optics:'光学'
+};
+const catClasses={
+  mechanics:'cat-mechanics',em:'cat-em',wave:'cat-wave',thermo:'cat-thermo',optics:'cat-optics'
+};
+
+function render(filter='all'){
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  const filtered=filter==='all'?experiments:experiments.filter(e=>e.cat===filter);
+  filtered.forEach(e=>{
+    const card=document.createElement('a');
+    card.className='card';
+    card.href='experiments/'+e.file+'.html';
+    card.innerHTML=`
+      <div class="card-number">${e.id}</div>
+      <div class="card-title">${e.title}</div>
+      <div class="card-desc">${e.desc}</div>
+      <span class="card-category ${catClasses[e.cat]}">${catLabels[e.cat]}</span>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    render(btn.dataset.cat);
+  });
+});
+
+render();
+</script>
+</body>
+</html>
