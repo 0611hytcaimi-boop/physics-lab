@@ -1,0 +1,363 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>刚体碰撞 可调整参数 不溢出 修正版</title>
+    <style>
+        body {
+            font-family: Consolas, "微软雅黑", monospace;
+            text-align: center;
+            margin: 10px;
+            font-size: 12px;
+        }
+        .back-btn{
+  color:var(--text2);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:6px;
+  transition:all .2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 99;
+}
+.back-btn:hover{
+  color:var(--text);
+  background:var(--bg3);
+}
+.back-btn::before{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(45deg);
+}
+        .ctrlBar{
+            margin-bottom:8px;
+        }
+        button{
+            padding:5px 12px;
+            margin:0 3px;
+            cursor:pointer;
+        }
+        .paramPanel{
+            display:inline-block;
+            border:1px solid #ccc;
+            padding:8px;
+            background:#f0f0f0;
+            margin-right:10px;
+            vertical-align:top;
+        }
+        .paramPanel input{
+            width:50px;
+            margin:0 2px;
+        }
+        .wrap{
+            display:flex;
+            justify-content:center;
+            align-items:flex-start;
+            gap:10px;
+        }
+        canvas{
+            background:#fafafa;
+            border:1px solid #999;
+        }
+        #info{
+            width:380px;
+            height:360px;
+            padding:8px;
+            background:#f5f5f5;
+            text-align:left;
+            line-height:1.4;
+            white-space:pre;
+            border:1px solid #ccc;
+            overflow:hidden;
+            font-size:12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ctrlBar">
+      <a href="../index.html" class="back-btn">返回</a>
+        <button id="startBtn">开始模拟</button>
+        <button id="pauseBtn">暂停</button>
+        <button id="resetBtn">重置</button>
+        &nbsp;&nbsp;速度：
+        <input type="range" id="speedSlider" min="0.1" max="1" step="0.1" value="1">
+        <span id="speedText">1.0 倍</span>
+    </div>
+
+    <div class="wrap">
+        <div class="paramPanel">
+            <div><b>球1 参数</b></div>
+            <div>Vx:<input id="b1vx" type="number" step="0.1" value="1.8"></div>
+            <div>Vy:<input id="b1vy" type="number" step="0.1" value="0"></div>
+            <div>质量:<input id="b1m" type="number" step="1" min="1" value="26"></div>
+            <hr>
+            <div><b>球2 参数</b></div>
+            <div>Vx:<input id="b2vx" type="number" step="0.1" value="-1.5"></div>
+            <div>Vy:<input id="b2vy" type="number" step="0.1" value="0.4"></div>
+            <div>质量:<input id="b2m" type="number" step="1" min="1" value="30"></div>
+            <hr>
+            <div><b>物理参数</b></div>
+            <div>重力g:<input id="gInput" type="number" step="0.05" value="0.35"></div>
+            <div>恢复e:<input id="eInput" type="number" step="0.05" min="0" max="1" value="0.85"></div>
+        </div>
+
+        <canvas id="canvas" width="380" height="360"></canvas>
+        <div id="info">等待点击开始模拟</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const info = document.getElementById('info');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedText = document.getElementById('speedText');
+
+        const b1vxInput = document.getElementById('b1vx');
+        const b1vyInput = document.getElementById('b1vy');
+        const b1mInput = document.getElementById('b1m');
+        const b2vxInput = document.getElementById('b2vx');
+        const b2vyInput = document.getElementById('b2vy');
+        const b2mInput = document.getElementById('b2m');
+        const gInput = document.getElementById('gInput');
+        const eInput = document.getElementById('eInput');
+
+        let g = 0.35;
+        let e = 0.85;
+        const friction = 0.99;
+
+        let animationId;
+        let isRunning = false;
+        let isPaused = false;
+        let runTime = 0;
+        let speedRate = 1.0;
+
+        let recordDone = false;
+        let crashData = {
+            time:0,
+            b1_vx:0, b1_vy:0,
+            b2_vx:0, b2_vy:0,
+            b1_vx_after:0, b1_vy_after:0,
+            b2_vx_after:0, b2_vy_after:0
+        };
+
+        let ball1 = {x: 80, y: 70, r: 26, m:26, vx: 1.8, vy: 0};
+        let ball2 = {x: 300, y: 80, r: 30, m:30, vx: -1.5, vy: 0.4};
+
+        function fmt(n){
+            return n.toFixed(2).padStart(5,' ');
+        }
+        function getSpeed(vx,vy){
+            return Math.hypot(vx,vy);
+        }
+
+        speedSlider.oninput = function(){
+            speedRate = parseFloat(this.value);
+            speedText.innerText = speedRate.toFixed(1) + " 倍";
+        };
+
+        // 修复：标准刚体弹性碰撞公式，解决粘连、穿透
+        function checkCollision() {
+            let dx = ball2.x - ball1.x;
+            let dy = ball2.y - ball1.y;
+            let dist = Math.hypot(dx, dy);
+            let minDist = ball1.r + ball2.r;
+
+            if (dist < minDist) {
+                // 碰撞瞬间记录
+                if(!recordDone){
+                    recordDone = true;
+                    crashData.time = runTime;
+                    crashData.b1_vx = ball1.vx;
+                    crashData.b1_vy = ball1.vy;
+                    crashData.b2_vx = ball2.vx;
+                    crashData.b2_vy = ball2.vy;
+                }
+
+                // 位置校正 防止卡球
+                let overlap = minDist - dist;
+                let nx = dx / dist;
+                let ny = dy / dist;
+                ball1.x -= nx * overlap / 2;
+                ball1.y -= ny * overlap / 2;
+                ball2.x += nx * overlap / 2;
+                ball2.y += ny * overlap / 2;
+
+                // 标准动量守恒+恢复系数 公式
+                let m1 = ball1.m, m2 = ball2.m;
+                let v1n = ball1.vx * nx + ball1.vy * ny;
+                let v2n = ball2.vx * nx + ball2.vy * ny;
+
+                let v1nNew = ((m1 - e*m2)*v1n + (1+e)*m2*v2n) / (m1 + m2);
+                let v2nNew = ((m2 - e*m1)*v2n + (1+e)*m1*v1n) / (m1 + m2);
+
+                // 切向速度不变
+                let tnx = -ny, tny = nx;
+                let v1t = ball1.vx * tnx + ball1.vy * tny;
+                let v2t = ball2.vx * tnx + ball2.vy * tny;
+
+                // 合成新速度
+                ball1.vx = v1nNew * nx + v1t * tnx;
+                ball1.vy = v1nNew * ny + v1t * tny;
+                ball2.vx = v2nNew * nx + v2t * tnx;
+                ball2.vy = v2nNew * ny + v2t * tny;
+
+                // 记录碰撞后速度
+                if(crashData.b1_vx_after === 0){
+                    crashData.b1_vx_after = ball1.vx;
+                    crashData.b1_vy_after = ball1.vy;
+                    crashData.b2_vx_after = ball2.vx;
+                    crashData.b2_vy_after = ball2.vy;
+                }
+            }
+        }
+
+        // 修复边界反弹物理
+        function wallCollision(ball){
+            if(ball.x - ball.r < 0){
+                ball.x = ball.r;
+                ball.vx = -ball.vx * e;
+            }
+            if(ball.x + ball.r > canvas.width){
+                ball.x = canvas.width - ball.r;
+                ball.vx = -ball.vx * e;
+            }
+            if(ball.y - ball.r < 0){
+                ball.y = ball.r;
+                ball.vy = -ball.vy * e;
+            }
+            if(ball.y + ball.r > canvas.height){
+                ball.y = canvas.height - ball.r;
+                ball.vy = -ball.vy * e;
+                ball.vx *= friction;
+            }
+        }
+
+        // 修复：正确物理时序 先速度(加重力) 后位置
+        function updatePhysics(){
+            g = parseFloat(gInput.value) || 0.35;
+            e = parseFloat(eInput.value) || 0.85;
+
+            [ball1, ball2].forEach(ball=>{
+                // 第一步：重力改变竖直速度
+                ball.vy += g * speedRate;
+                // 第二步：再更新位置
+                ball.x += ball.vx * speedRate;
+                ball.y += ball.vy * speedRate;
+
+                wallCollision(ball);
+            });
+
+            checkCollision();
+        }
+
+        function draw(){
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            // 红球1
+            ctx.beginPath();
+            ctx.arc(ball1.x, ball1.y, ball1.r, 0, Math.PI*2);
+            ctx.fillStyle = "#f44336";
+            ctx.fill();ctx.stroke();
+            ctx.fillStyle="#fff";
+            ctx.font="12px Consolas";
+            ctx.textAlign="center";
+            ctx.fillText("1",ball1.x,ball1.y+4);
+
+            // 蓝球2
+            ctx.beginPath();
+            ctx.arc(ball2.x, ball2.y, ball2.r, 0, Math.PI*2);
+            ctx.fillStyle = "#2196F3";
+            ctx.fill();ctx.stroke();
+            ctx.fillStyle="#fff";
+            ctx.fillText("2",ball2.x,ball2.y+4);
+        }
+
+        function updateInfo(){
+            let txt = `时间:${fmt(runTime)}s  g:${fmt(g)} e:${fmt(e)}\n`;
+            txt += `--------------------------------\n`;
+            txt += `球1 位置(${fmt(ball1.x)},${fmt(ball1.y)}) 速率${fmt(getSpeed(ball1.vx,ball1.vy))}\n`;
+            txt += `球2 位置(${fmt(ball2.x)},${fmt(ball2.y)}) 速率${fmt(getSpeed(ball2.vx,ball2.vy))}\n`;
+            if(recordDone){
+                txt += `--------------------------------\n`;
+                txt += `碰撞时刻:${fmt(crashData.time)}s\n`;
+                txt += `碰前1:Vx=${fmt(crashData.b1_vx)} Vy=${fmt(crashData.b1_vy)}\n`;
+                txt += `碰前2:Vx=${fmt(crashData.b2_vx)} Vy=${fmt(crashData.b2_vy)}\n`;
+                txt += `碰后1:Vx=${fmt(crashData.b1_vx_after)} Vy=${fmt(crashData.b1_vy_after)}\n`;
+                txt += `碰后2:Vx=${fmt(crashData.b2_vx_after)} Vy=${fmt(crashData.b2_vy_after)}\n`;
+            }
+            info.innerText = txt;
+        }
+
+        function loop(){
+            if(!isPaused){
+                runTime += 0.016 * speedRate;
+                updatePhysics();
+                draw();
+                updateInfo();
+            }
+            animationId = requestAnimationFrame(loop);
+        }
+
+        startBtn.onclick = function(){
+            if(isRunning) return;
+            isRunning = isPaused = false;
+            // 读取面板参数
+            ball1.vx = +b1vxInput.value;
+            ball1.vy = +b1vyInput.value;
+            ball1.m = +b1mInput.value;
+            ball1.r = 20 + ball1.m/3;
+
+            ball2.vx = +b2vxInput.value;
+            ball2.vy = +b2vyInput.value;
+            ball2.m = +b2mInput.value;
+            ball2.r = 20 + ball2.m/3;
+
+            loop();
+        };
+
+        pauseBtn.onclick = function(){
+            isPaused = !isPaused;
+            this.innerText = isPaused ? "继续" : "暂停";
+        };
+
+        resetBtn.onclick = function(){
+            cancelAnimationFrame(animationId);
+            isRunning = isPaused = false;
+            recordDone = false;
+            runTime = 0;
+            pauseBtn.innerText = "暂停";
+
+            ball1.x = 80; ball1.y = 70;
+            ball2.x = 300; ball2.y = 80;
+
+            ball1.vx = +b1vxInput.value;
+            ball1.vy = +b1vyInput.value;
+            ball1.m = +b1mInput.value;
+            ball1.r = 20 + ball1.m/3;
+
+            ball2.vx = +b2vxInput.value;
+            ball2.vy = +b2vyInput.value;
+            ball2.m = +b2mInput.value;
+            ball2.r = 20 + ball2.m/3;
+
+            crashData = {time:0,b1_vx:0,b1_vy:0,b2_vx:0,b2_vy:0,b1_vx_after:0,b1_vy_after:0,b2_vx_after:0,b2_vy_after:0};
+            draw();
+            info.innerText = "等待点击开始模拟";
+        };
+
+        draw();
+    </script>
+</body>
+</html>
