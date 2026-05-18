@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>显色偏振与光弹效应 - 交互式物理实验（增强版）</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .back-btn{
+  color:var(--text2);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:6px;
+  transition:all .2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 99;
+}
+.back-btn:hover{
+  color:var(--text);
+  background:var(--bg3);
+}
+.back-btn::before{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(45deg);
+}
+
+        .header {
+            text-align: center;
+            padding: 18px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 2px solid rgba(100, 200, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 1.9rem;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+        }
+
+        .header p { color: #8899aa; font-size: 0.85rem; }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 250px 1fr 270px;
+            gap: 10px;
+            padding: 10px;
+            min-height: calc(100vh - 90px);
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            overflow-y: auto;
+            max-height: calc(100vh - 110px);
+        }
+
+        .panel::-webkit-scrollbar { width: 5px; }
+        .panel::-webkit-scrollbar-track { background: transparent; }
+        .panel::-webkit-scrollbar-thumb { background: rgba(0, 210, 255, 0.3); border-radius: 2px; }
+
+        .panel-title {
+            font-size: 0.95rem;
+            color: #00d2ff;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(0, 210, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .panel-title::before {
+            content: '';
+            width: 3px;
+            height: 14px;
+            background: #00d2ff;
+            border-radius: 2px;
+        }
+
+        .step-list { list-style: none; }
+
+        .step-item {
+            padding: 8px;
+            margin-bottom: 5px;
+            background: rgba(0, 210, 255, 0.03);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 2px solid transparent;
+        }
+
+        .step-item:hover { background: rgba(0, 210, 255, 0.08); }
+        .step-item.active { background: rgba(0, 210, 255, 0.12); border-left-color: #00d2ff; }
+
+        .step-number {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #00d2ff;
+            color: #000;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 20px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-right: 6px;
+        }
+
+        .step-item h4 { font-size: 0.85rem; color: #fff; margin-bottom: 3px; }
+        .step-item p { font-size: 0.7rem; color: #8899aa; line-height: 1.3; }
+
+        .canvas-container {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #mainCanvas { width: 100%; height: 100%; display: block; cursor: grab; }
+        #mainCanvas:active { cursor: grabbing; }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .info-badge {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            backdrop-filter: blur(5px);
+        }
+
+        .info-badge span { color: #00d2ff; font-weight: bold; }
+
+        .control-group { margin-bottom: 15px; }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+        }
+
+        .control-value { color: #00d2ff; font-weight: bold; font-family: monospace; }
+
+        input[type="range"] {
+            width: 100%;
+            height: 5px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #00d2ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 9px;
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+
+        .btn.secondary { background: rgba(255, 255, 255, 0.08); }
+
+        .formula-box {
+            background: rgba(0, 0, 0, 0.25);
+            padding: 8px;
+            border-radius: 5px;
+            font-family: 'Cambria Math', 'Times New Roman', serif;
+            text-align: center;
+            margin: 8px 0;
+            font-size: 0.9rem;
+            color: #ffd700;
+        }
+
+        .principle-content { font-size: 0.75rem; line-height: 1.5; }
+        .principle-content p { margin-bottom: 8px; }
+        .principle-content .highlight { color: #00d2ff; font-weight: bold; }
+
+        .tabs { display: flex; gap: 3px; margin-bottom: 10px; }
+
+        .tab-btn {
+            flex: 1;
+            padding: 7px 3px;
+            background: rgba(255, 255, 255, 0.03);
+            border: none;
+            border-radius: 4px;
+            color: #8899aa;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .tab-btn.active { background: rgba(0, 210, 255, 0.15); color: #00d2ff; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .app-card {
+            background: rgba(0, 210, 255, 0.03);
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 6px;
+            border-left: 2px solid rgba(0, 210, 255, 0.3);
+        }
+
+        .app-card h4 { color: #00d2ff; font-size: 0.8rem; margin-bottom: 4px; }
+        .app-card p { font-size: 0.7rem; color: #8899aa; line-height: 1.4; }
+
+        .legend { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+        .legend-item { display: flex; align-items: center; gap: 3px; font-size: 0.65rem; }
+        .legend-color { width: 12px; height: 6px; border-radius: 1px; }
+
+        .hint-box {
+            background: rgba(255, 193, 7, 0.08);
+            border-left: 2px solid #ffc107;
+            padding: 8px;
+            border-radius: 3px;
+            margin-top: 10px;
+            font-size: 0.75rem;
+            line-height: 1.4;
+        }
+
+        .hint-box::before { content: '💡 '; }
+
+        .stress-indicator { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+
+        .stress-bar {
+            flex: 1;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .stress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00ff00, #ffff00, #ff0000);
+            transition: width 0.3s;
+            border-radius: 2px;
+        }
+
+        .model-selector { display: flex; gap: 5px; margin-bottom: 10px; }
+
+        .model-btn {
+            flex: 1;
+            padding: 7px 3px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px solid transparent;
+            border-radius: 4px;
+            color: #8899aa;
+            cursor: pointer;
+            font-size: 0.7rem;
+            text-align: center;
+        }
+
+        .model-btn.active {
+            border-color: #00d2ff;
+            color: #00d2ff;
+            background: rgba(0, 210, 255, 0.08);
+        }
+
+        @media (max-width: 1200px) {
+            .main-container { grid-template-columns: 1fr; }
+            .left-panel, .right-panel { max-height: 220px; }
+            .canvas-container { min-height: 400px; }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.2rem; }
+            .main-container { padding: 6px; gap: 6px; }
+            .canvas-container { min-height: 320px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+      <a href="../index.html" class="back-btn">返回</a>
+        <h1>显色偏振与光弹效应（增强版）</h1>
+        <p>Photoelasticity Interactive Experiment - Enhanced</p>
+    </div>
+
+    <div class="main-container">
+        <div class="panel left-panel">
+            <div class="panel-title">实验步骤引导</div>
+            <ul class="step-list">
+                <li class="step-item active" data-step="1">
+                    <h4><span class="step-number">1</span>观察起偏现象</h4>
+                    <p>调节偏振片夹角，观察光强变化</p>
+                </li>
+                <li class="step-item" data-step="2">
+                    <h4><span class="step-number">2</span>引入样品</h4>
+                    <p>选择透明样品模型放入光路</p>
+                </li>
+                <li class="step-item" data-step="3">
+                    <h4><span class="step-number">3</span>施加应力</h4>
+                    <p>拖动模型或调节滑块施加外力</p>
+                </li>
+                <li class="step-item" data-step="4">
+                    <h4><span class="step-number">4</span>观察干涉条纹</h4>
+                    <p>观察彩色条纹与应力分布关系</p>
+                </li>
+                <li class="step-item" data-step="5">
+                    <h4><span class="step-number">5</span>旋转检偏器</h4>
+                    <p>改变偏振片夹角观察颜色变化</p>
+                </li>
+            </ul>
+
+            <div class="hint-box">
+                拖动画布上的模型区域可施加虚拟外力，彩色干涉条纹会实时变化
+            </div>
+
+            <div style="margin-top: 12px;">
+                <div class="panel-title">选择样品模型</div>
+                <div class="model-selector">
+                    <button class="model-btn active" data-model="ruler">塑料直尺</button>
+                    <button class="model-btn" data-model="fork">塑料叉</button>
+                    <button class="model-btn" data-model="bridge">桥梁</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="mainCanvas"></canvas>
+            <div class="canvas-overlay">
+                <div class="info-badge">应力: <span id="stressDisplay">0.00</span> MPa</div>
+                <div class="info-badge">偏振夹角: <span id="angleDisplay">90°</span></div>
+                <div class="info-badge">光强: <span id="intensityDisplay">0%</span></div>
+            </div>
+        </div>
+
+        <div class="panel right-panel">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="controls">控制面板</button>
+                <button class="tab-btn" data-tab="principle">原理简析</button>
+                <button class="tab-btn" data-tab="applications">工程应用</button>
+            </div>
+
+            <div class="tab-content active" id="controls-tab">
+                <div class="panel-title">参数调节</div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>起偏器与检偏器夹角</span>
+                        <span class="control-value" id="polarizerAngleValue">90°</span>
+                    </div>
+                    <input type="range" id="polarizerAngle" min="0" max="180" value="90">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>施加力大小</span>
+                        <span class="control-value" id="forceValue">0 N</span>
+                    </div>
+                    <input type="range" id="forceSlider" min="0" max="100" value="0">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>应力-光学系数</span>
+                        <span class="control-value" id="coeffValue">3.0x</span>
+                    </div>
+                    <input type="range" id="stressCoeff" min="5" max="80" value="30">
+                </div>
+
+                <div class="stress-indicator">
+                    <span style="font-size: 0.7rem;">应力水平</span>
+                    <div class="stress-bar">
+                        <div class="stress-fill" id="stressBar"></div>
+                    </div>
+                </div>
+
+                <div class="formula-box">I = I₀ cos²θ</div>
+                <p style="font-size: 0.7rem; color: #8899aa; text-align: center; margin-bottom: 6px;">马吕斯定律</p>
+
+                <div class="formula-box">δ = (2π/λ) · C · σ · d</div>
+                <p style="font-size: 0.7rem; color: #8899aa; text-align: center; margin-bottom: 6px;">相位差公式</p>
+
+                <button class="btn" id="resetBtn">重置实验</button>
+                <button class="btn secondary" id="autoDemoBtn">自动演示</button>
+            </div>
+
+            <div class="tab-content" id="principle-tab">
+                <div class="panel-title">实验原理</div>
+                <div class="principle-content">
+                    <p><span class="highlight">1. 起偏</span><br>自然光通过起偏器后，转变为只在一个方向振动的<span class="highlight">线偏振光</span>。</p>
+
+                    <p><span class="highlight">2. 双折射效应</span><br>线偏振光进入受应力的透明塑料时，分解为两束振动方向垂直、传播速度不同的光（o光和e光），产生<span class="highlight">相位差 δ</span>。</p>
+
+                    <div class="formula-box">δ = (2π/λ) · C · σ · d</div>
+                    <p style="font-size: 0.65rem; color: #8899aa; text-align: center;">C:应力光学系数 σ:应力 d:厚度</p>
+
+                    <p><span class="highlight">3. 偏振光干涉</span><br>两束光经检偏器后在同一方向发生干涉，特定波长的光被增强，互补色被减弱。</p>
+
+                    <p><span class="highlight">4. 显色原理</span><br>白光中不同波长的光因相位差不同而产生不同的干涉效果，形成与应力分布一一对应的<span class="highlight">彩色条纹</span>。</p>
+
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-color" style="background: #ff0000;"></div>高应力</div>
+                        <div class="legend-item"><div class="legend-color" style="background: #ffff00;"></div>中应力</div>
+                        <div class="legend-item"><div class="legend-color" style="background: #00ff00;"></div>低应力</div>
+                        <div class="legend-item"><div class="legend-color" style="background: #0000ff;"></div>极低应力</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="applications-tab">
+                <div class="panel-title">工程应用</div>
+
+                <div class="app-card">
+                    <h4>桥梁结构检测</h4>
+                    <p>工程师制作透明塑料桥梁模型，施加模拟载荷，通过光弹条纹直接观察应力集中区域，优化结构设计。</p>
+                </div>
+
+                <div class="app-card">
+                    <h4>玻璃制品质检</h4>
+                    <p>将玻璃制品置于偏振光场中，观察内部残余应力分布，检测是否存在可能导致破裂的应力集中点。</p>
+                </div>
+
+                <div class="app-card">
+                    <h4>机械零件优化</h4>
+                    <p>齿轮、轴承等关键零件的透明模型可通过光弹性实验验证设计的合理性，避免应力过大导致疲劳失效。</p>
+                </div>
+
+                <div class="app-card">
+                    <h4>航空航天</h4>
+                    <p>飞机机翼、发动机叶片等部件的应力分析，确保飞行安全。现代数字光弹性技术已实现全场自动测量。</p>
+                </div>
+
+                <div class="hint-box">
+                    光弹性法是实验应力分析的重要方法，具有全场性、直观性强等优点，在工程设计和失效分析中广泛应用。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let polarizerAngle = 90;
+        let forceApplied = 0;
+        let stressCoeff = 3.0;
+        let selectedModel = 'ruler';
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let forcePoint = { x: 0.5, y: 0.5 };
+        let autoDemo = false;
+        let autoDemoTime = 0;
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            width = container.clientWidth;
+            height = container.clientHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        function malusLaw(I0, theta) {
+            const rad = theta * Math.PI / 180;
+            return I0 * Math.cos(rad) * Math.cos(rad);
+        }
+
+        function getInterferenceColor(delta, alpha) {
+            const thetaRad = alpha * Math.PI / 180;
+            const sin2Theta = Math.sin(2 * thetaRad);
+            const interferenceFactor = sin2Theta * sin2Theta;
+
+            const retardation = delta * stressCoeff * 0.8;
+
+            const r = 255 * interferenceFactor * (0.5 + 0.5 * Math.cos((retardation * 2 * Math.PI) / (700 / 546.1)));
+            const g = 255 * interferenceFactor * (0.5 + 0.5 * Math.cos((retardation * 2 * Math.PI) / (546.1 / 546.1)));
+            const b = 255 * interferenceFactor * (0.5 + 0.5 * Math.cos((retardation * 2 * Math.PI) / (435.8 / 546.1)));
+
+            return {
+                r: Math.min(255, Math.max(0, Math.floor(r))),
+                g: Math.min(255, Math.max(0, Math.floor(g))),
+                b: Math.min(255, Math.max(0, Math.floor(b)))
+            };
+        }
+
+        function getStressAtPoint(x, y, forceX, forceY, forceMag) {
+            const dx = x - forceX;
+            const dy = y - forceY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const decay = 12;
+            return forceMag / (dist * dist * decay + 0.01);
+        }
+
+        function isInModel(x, y) {
+            const cx = width / 2;
+            const cy = height / 2;
+
+            if (selectedModel === 'ruler') {
+                const w = width * 0.55;
+                const h = height * 0.18;
+                const bend = Math.sin(((x - (cx - w / 2)) / w) * Math.PI) * forceApplied * 0.25;
+                return x >= cx - w / 2 && x <= cx + w / 2 && y >= cy - h / 2 + bend && y <= cy + h / 2 + bend;
+            } else if (selectedModel === 'fork') {
+                const scale = Math.min(width, height) * 0.35;
+                const minX = cx - scale * 0.2;
+                const maxX = cx + scale * 0.2;
+                const minY = cy - scale * 0.6;
+                const maxY = cy + scale * 0.25;
+                return x >= minX && x <= maxX && y >= minY && y <= maxY;
+            } else {
+                const w = width * 0.6;
+                const h = height * 0.35;
+                const minX = cx - w / 2;
+                const maxX = cx + w / 2;
+                const minY = cy - h;
+                const maxY = cy + h * 0.15;
+                return x >= minX && x <= maxX && y >= minY && y <= maxY;
+            }
+        }
+
+        function drawModel() {
+            if (selectedModel === 'ruler') drawRuler();
+            else if (selectedModel === 'fork') drawFork();
+            else drawBridge();
+        }
+
+        function drawRuler() {
+            const cx = width / 2;
+            const cy = height / 2;
+            const w = width * 0.55;
+            const h = height * 0.18;
+            const bendAmount = forceApplied * 0.25;
+
+            const points = [];
+            const segments = 80;
+
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const x = cx - w / 2 + w * t;
+                const bend = Math.sin(t * Math.PI) * bendAmount;
+                points.push({ x, topY: cy - h / 2 + bend, bottomY: cy + h / 2 + bend });
+            }
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].topY);
+            for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].topY);
+            for (let i = points.length - 1; i >= 0; i--) ctx.lineTo(points[i].x, points[i].bottomY);
+            ctx.closePath();
+            ctx.clip();
+
+            const res = 3;
+            const minY = Math.min(...points.map(p => p.topY));
+            const maxY = Math.max(...points.map(p => p.bottomY));
+
+            for (let px = cx - w / 2; px < cx + w / 2; px += res) {
+                for (let py = minY; py < maxY; py += res) {
+                    const t = (px - (cx - w / 2)) / w;
+                    const localY = cy + Math.sin(t * Math.PI) * bendAmount;
+                    const normY = (py - localY) / h;
+                    const nx = (px - cx + w / 2) / w;
+                    const sigma = getStressAtPoint(nx, 0.5, forcePoint.x, 0.5, forceApplied / 100);
+                    const finalStress = sigma * (1 + Math.abs(normY) * 2);
+
+                    if (finalStress > 0.001 && polarizerAngle > 5 && polarizerAngle < 175) {
+                        const delta = finalStress * 8;
+                        const color = getInterferenceColor(delta, polarizerAngle);
+                        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.95)`;
+                        ctx.fillRect(px, py, res, res);
+                    }
+                }
+            }
+
+            ctx.restore();
+
+            ctx.strokeStyle = 'rgba(0, 210, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].topY);
+            for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].topY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].bottomY);
+            for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].bottomY);
+            ctx.stroke();
+
+            for (let i = 0; i < 10; i++) {
+                const t = (i + 1) / 11;
+                const x = cx - w / 2 + w * t;
+                const bend = Math.sin(t * Math.PI) * bendAmount;
+                ctx.beginPath();
+                ctx.moveTo(x, cy - h / 2 + bend);
+                ctx.lineTo(x, cy - h / 2 + bend + 8);
+                ctx.strokeStyle = 'rgba(0, 210, 255, 0.3)';
+                ctx.stroke();
+            }
+
+            if (forceApplied > 5) {
+                const arrowX = forcePoint.x * w + (cx - w / 2);
+                const arrowY = cy - h / 2 - 15;
+                const arrowSize = 10 + forceApplied * 0.2;
+                ctx.fillStyle = '#ff4444';
+                ctx.beginPath();
+                ctx.moveTo(arrowX, arrowY + arrowSize);
+                ctx.lineTo(arrowX - 8, arrowY + arrowSize - 12);
+                ctx.lineTo(arrowX + 8, arrowY + arrowSize - 12);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.strokeStyle = '#ff4444';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(arrowX, arrowY - 5);
+                ctx.lineTo(arrowX, arrowY + arrowSize);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        function drawFork() {
+            const cx = width / 2;
+            const cy = height / 2;
+            const scale = Math.min(width, height) * 0.35;
+
+            ctx.save();
+            ctx.beginPath();
+
+            const tineWidth = scale * 0.08;
+            const tineLength = scale * 0.6;
+            const tineGap = scale * 0.15;
+            const handleWidth = scale * 0.12;
+            const handleLength = scale * 0.5;
+
+            ctx.moveTo(cx - handleWidth / 2, cy + handleLength / 2);
+            ctx.lineTo(cx + handleWidth / 2, cy + handleLength / 2);
+            ctx.lineTo(cx + handleWidth / 2, cy);
+            ctx.lineTo(cx + tineWidth / 2, cy);
+            ctx.lineTo(cx + tineWidth / 2, cy - tineLength);
+            ctx.lineTo(cx + tineWidth / 2 - tineGap, cy - tineLength);
+            ctx.lineTo(cx + tineWidth / 2 - tineGap, cy);
+            ctx.lineTo(cx - tineWidth / 2 + tineGap, cy);
+            ctx.lineTo(cx - tineWidth / 2 + tineGap, cy - tineLength);
+            ctx.lineTo(cx - tineWidth / 2, cy - tineLength);
+            ctx.lineTo(cx - tineWidth / 2, cy);
+            ctx.lineTo(cx - handleWidth / 2, cy);
+            ctx.closePath();
+            ctx.clip();
+
+            const res = 3;
+            const minX = cx - handleWidth / 2 - 5;
+            const maxX = cx + handleWidth / 2 + 5;
+            const minY = cy - tineLength - 5;
+            const maxY = cy + handleLength / 2 + 5;
+
+            for (let px = minX; px < maxX; px += res) {
+                for (let py = minY; py < maxY; py += res) {
+                    const nx = (px - minX) / (maxX - minX);
+                    const ny = (py - minY) / (maxY - minY);
+                    const sigma = getStressAtPoint(nx, ny, forcePoint.x, forcePoint.y, forceApplied / 100);
+
+                    if (sigma > 0.001 && polarizerAngle > 5 && polarizerAngle < 175) {
+                        const delta = sigma * 8;
+                        const color = getInterferenceColor(delta, polarizerAngle);
+                        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.95)`;
+                        ctx.fillRect(px, py, res, res);
+                    }
+                }
+            }
+
+            ctx.restore();
+            ctx.strokeStyle = 'rgba(0, 210, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            if (forceApplied > 5) {
+                const arrowX = forcePoint.x * (maxX - minX) + minX;
+                const arrowY = forcePoint.y * (maxY - minY) + minY;
+                ctx.fillStyle = '#ff4444';
+                ctx.beginPath();
+                ctx.arc(arrowX, arrowY, 5 + forceApplied * 0.05, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ff4444';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2, 2]);
+                ctx.beginPath();
+                ctx.arc(arrowX, arrowY, 10 + forceApplied * 0.1, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        function drawBridge() {
+            const cx = width / 2;
+            const cy = height / 2;
+            const w = width * 0.6;
+            const h = height * 0.35;
+
+            ctx.save();
+            ctx.beginPath();
+
+            const segments = 100;
+            const points = [];
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const x = cx - w / 2 + w * t;
+                const archY = cy - Math.sin(t * Math.PI) * h;
+                points.push({ x, y: archY });
+            }
+
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+            ctx.lineTo(cx + w / 2, cy + h * 0.15);
+            ctx.lineTo(cx - w / 2, cy + h * 0.15);
+            ctx.closePath();
+            ctx.clip();
+
+            const res = 3;
+            const minX = cx - w / 2;
+            const maxX = cx + w / 2;
+            const minY = cy - h - 5;
+            const maxY = cy + h * 0.15 + 5;
+
+            for (let px = minX; px < maxX; px += res) {
+                for (let py = minY; py < maxY; py += res) {
+                    const nx = (px - minX) / (maxX - minX);
+                    const ny = (py - minY) / (maxY - minY);
+                    const sigma = getStressAtPoint(nx, ny, forcePoint.x, 0.3, forceApplied / 100);
+
+                    if (sigma > 0.001 && polarizerAngle > 5 && polarizerAngle < 175) {
+                        const delta = sigma * 8;
+                        const color = getInterferenceColor(delta, polarizerAngle);
+                        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, 0.95)`;
+                        ctx.fillRect(px, py, res, res);
+                    }
+                }
+            }
+
+            ctx.restore();
+            ctx.strokeStyle = 'rgba(0, 210, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1;
+
+            const pillarPositions = [cx - w * 0.35, cx - w * 0.15, cx, cx + w * 0.15, cx + w * 0.35];
+            pillarPositions.forEach(px => {
+                const t = (px - (cx - w / 2)) / w;
+                const archY = cy - Math.sin(t * Math.PI) * h;
+                ctx.beginPath();
+                ctx.moveTo(px, archY);
+                ctx.lineTo(px, cy + h * 0.15);
+                ctx.stroke();
+            });
+
+            if (forceApplied > 5) {
+                const arrowX = cx;
+                const arrowY = cy - h * 0.6;
+                const arrowSize = 10 + forceApplied * 0.2;
+                ctx.fillStyle = '#ff4444';
+                ctx.beginPath();
+                ctx.moveTo(arrowX, arrowY + arrowSize);
+                ctx.lineTo(arrowX - 10, arrowY + arrowSize - 15);
+                ctx.lineTo(arrowX + 10, arrowY + arrowSize - 15);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function drawPolarizerVisual() {
+            const size = 50;
+            const margin = 15;
+            const x = width - size - margin;
+            const y = 15;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(x - 5, y - 5, size + 10, size + 10);
+
+            const centerX = x + size / 2;
+            const centerY = y + size / 2;
+
+            ctx.strokeStyle = 'rgba(0, 210, 255, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(centerX - size / 3, centerY);
+            ctx.lineTo(centerX + size / 3, centerY);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(255, 100, 100, 0.7)';
+            const angle2 = polarizerAngle * Math.PI / 180;
+            ctx.beginPath();
+            ctx.moveTo(centerX - size / 3 * Math.cos(angle2), centerY - size / 3 * Math.sin(angle2));
+            ctx.lineTo(centerX + size / 3 * Math.cos(angle2), centerY + size / 3 * Math.sin(angle2));
+            ctx.stroke();
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('偏振方向', centerX, y + size + 10);
+        }
+
+        function drawLightPath() {
+            const y = height - 35;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'center';
+
+            ctx.fillText('光源', 35, y);
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(50, y - 4);
+            ctx.lineTo(100, y - 4);
+            ctx.lineTo(96, y - 8);
+            ctx.moveTo(100, y - 4);
+            ctx.lineTo(96, y);
+            ctx.stroke();
+
+            ctx.fillText('起偏器', 130, y);
+            ctx.strokeStyle = '#00d2ff';
+            ctx.beginPath();
+            ctx.moveTo(165, y - 4);
+            ctx.lineTo(215, y - 4);
+            ctx.lineTo(211, y - 8);
+            ctx.moveTo(215, y - 4);
+            ctx.lineTo(211, y);
+            ctx.stroke();
+
+            ctx.fillText('样品', 245, y);
+            ctx.strokeStyle = '#00ff00';
+            ctx.beginPath();
+            ctx.moveTo(270, y - 4);
+            ctx.lineTo(320, y - 4);
+            ctx.lineTo(316, y - 8);
+            ctx.moveTo(320, y - 4);
+            ctx.lineTo(316, y);
+            ctx.stroke();
+
+            ctx.fillText('检偏器', 350, y);
+        }
+
+        function drawBackground() {
+            const intensity = malusLaw(1, polarizerAngle);
+            const stressDimming = Math.min(forceApplied / 200, 0.4);
+            const brightness = Math.floor(intensity * 15 * (1 - stressDimming));
+            ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        function updateUI() {
+            document.getElementById('polarizerAngleValue').textContent = `${Math.round(polarizerAngle)}°`;
+            document.getElementById('angleDisplay').textContent = `${Math.round(polarizerAngle)}°`;
+            document.getElementById('forceValue').textContent = `${Math.round(forceApplied)} N`;
+            document.getElementById('stressDisplay').textContent = (forceApplied / 10).toFixed(2);
+            document.getElementById('stressBar').style.width = `${forceApplied}%`;
+            document.getElementById('coeffValue').textContent = `${(stressCoeff / 10).toFixed(1)}x`;
+            const intensityPercent = Math.round(malusLaw(100, polarizerAngle));
+            document.getElementById('intensityDisplay').textContent = `${intensityPercent}%`;
+        }
+
+        function render() {
+            if (autoDemo) {
+                autoDemoTime += 0.015;
+                forceApplied = (Math.sin(autoDemoTime) + 1) * 50;
+                polarizerAngle = (Math.sin(autoDemoTime * 0.7) + 1) * 90;
+                updateUI();
+            }
+
+            drawBackground();
+            drawLightPath();
+            drawModel();
+            drawPolarizerVisual();
+            requestAnimationFrame(render);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            dragStart.x = e.clientX - rect.left;
+            dragStart.y = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const dx = x - dragStart.x;
+            const dy = y - dragStart.y;
+            forcePoint.x = x / width;
+            forcePoint.y = y / height;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            forceApplied = Math.min(100, dist * 0.5);
+            updateUI();
+        });
+
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => isDragging = false);
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            dragStart.x = touch.clientX - rect.left;
+            dragStart.y = touch.clientY - rect.top;
+            isDragging = true;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDragging) return;
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            const dx = x - dragStart.x;
+            const dy = y - dragStart.y;
+            forcePoint.x = x / width;
+            forcePoint.y = y / height;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            forceApplied = Math.min(100, dist * 0.5);
+            updateUI();
+        });
+
+        canvas.addEventListener('touchend', () => isDragging = false);
+
+        document.getElementById('polarizerAngle').addEventListener('input', (e) => {
+            polarizerAngle = parseInt(e.target.value);
+            updateUI();
+        });
+
+        document.getElementById('forceSlider').addEventListener('input', (e) => {
+            forceApplied = parseInt(e.target.value);
+            updateUI();
+        });
+
+        document.getElementById('stressCoeff').addEventListener('input', (e) => {
+            stressCoeff = parseInt(e.target.value) / 10;
+            updateUI();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            polarizerAngle = 90;
+            forceApplied = 0;
+            stressCoeff = 3.0;
+            autoDemo = false;
+            document.getElementById('polarizerAngle').value = 90;
+            document.getElementById('forceSlider').value = 0;
+            document.getElementById('stressCoeff').value = 30;
+            updateUI();
+        });
+
+        document.getElementById('autoDemoBtn').addEventListener('click', () => {
+            autoDemo = !autoDemo;
+            document.getElementById('autoDemoBtn').textContent = autoDemo ? '停止演示' : '自动演示';
+        });
+
+        document.querySelectorAll('.step-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.step-item').forEach(s => s.classList.remove('active'));
+                item.classList.add('active');
+                const step = parseInt(item.dataset.step);
+                switch (step) {
+                    case 1:
+                        polarizerAngle = 45;
+                        forceApplied = 0;
+                        document.getElementById('polarizerAngle').value = 45;
+                        document.getElementById('forceSlider').value = 0;
+                        break;
+                    case 2:
+                        selectedModel = 'ruler';
+                        document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelector('[data-model="ruler"]').classList.add('active');
+                        break;
+                    case 3:
+                        forceApplied = 50;
+                        document.getElementById('forceSlider').value = 50;
+                        break;
+                    case 4:
+                        polarizerAngle = 90;
+                        forceApplied = 70;
+                        document.getElementById('polarizerAngle').value = 90;
+                        document.getElementById('forceSlider').value = 70;
+                        break;
+                    case 5:
+                        polarizerAngle = 135;
+                        document.getElementById('polarizerAngle').value = 135;
+                        break;
+                }
+                updateUI();
+            });
+        });
+
+        document.querySelectorAll('.model-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedModel = btn.dataset.model;
+            });
+        });
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById(`${btn.dataset.tab}-tab`).classList.add('active');
+            });
+        });
+
+        updateUI();
+        render();
+    </script>
+</body>
+</html>
+
+===============================================
+源代码结束
+===============================================
+
+版本更新说明:
+
+v2.0 增强版主要改进:
+
+1. 应力分布模型优化:
+   - 原代码: forceMag * Math.exp(-dist * dist * 50)
+     (指数衰减，应力集中在很小区域)
+   - 新代码: forceMag / (dist * dist * decay + 0.01)
+     (反比例衰减，应力扩散更广，更符合实际)
+
+2. 干涉色计算优化:
+   - 原代码: 使用 sin 函数，颜色单调
+   - 新代码: 使用 cos 函数配合正确相位差，颜色周期性变化
+   - 结果: 产生更真实的等色线条纹效果
+
+3. 显示阈值降低:
+   - 从 0.005 降至 0.001
+   - 微弱应力区域也能显示彩色条纹
+
+4. 颜色透明度增强:
+   - 从 0.85 提升至 0.95
+   - 条纹颜色更饱和鲜艳
+
+5. 默认应力系数提高:
+   - 从 1.0x 提升至 3.0x
+   - 相同力作用下产生更多干涉色级次
+
+6. 背景变暗效果:
+   - 施加应力时背景亮度降低
+   - 增强条纹与背景的对比度
+
+7. 滑块范围调整:
+   - 应力系数从 1-50 扩展到 5-80
+   - 提供更多调节空间
+
+使用方法:
+1. 将以上内容完整复制
+2. 新建一个文本文件，粘贴全部内容
+3. 将文件另存为 photoelasticity_experiment.html
+4. 用浏览器打开即可运行
+
+核心函数说明:
+- malusLaw(): 马吕斯定律计算
+- getInterferenceColor(): 干涉色生成(基于相位差和波长)
+- getStressAtPoint(): 应力分布计算(反比例衰减)
+- drawRuler()/drawFork()/drawBridge(): 三种模型绘制
+- drawBackground(): 背景渲染(含应力变暗效果)
+- render(): 主渲染循环
+
+===============================================
