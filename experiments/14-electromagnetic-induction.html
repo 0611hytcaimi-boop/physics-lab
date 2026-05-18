@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电磁感应 - 物理虚拟实验平台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--text:#e6edf3;--text2:#8b949e;--cyan:#58a6ff;--green:#3fb950;--orange:#d29922;--red:#f85149;--purple:#a371f7;--yellow:#e3b341}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.back-btn{color:var(--text2);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;transition:all .2s}
+.back-btn:hover{color:var(--text);background:var(--bg3)}
+.back-btn::before{content:'';display:inline-block;width:8px;height:8px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
+.header h1{font-size:18px;font-weight:600}.header .badge{font-size:12px;color:var(--text2);background:var(--bg3);padding:2px 10px;border-radius:10px;margin-left:auto}
+.main{display:flex;flex:1;overflow:hidden}
+.canvas-wrap{flex:1;position:relative;background:var(--bg)}
+#canvas{width:100%;height:100%;display:block}
+.panel{width:300px;background:var(--bg2);border-left:1px solid var(--border);padding:16px;overflow-y:auto;flex-shrink:0}
+.panel h2{font-size:14px;color:var(--text2);margin-bottom:12px;font-weight:500}
+.ctrl-group{margin-bottom:12px}
+.ctrl-group label{display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:4px}
+.ctrl-group label span{color:var(--cyan);font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:var(--bg3);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg2);cursor:pointer;transition:box-shadow .2s}
+input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 0 12px rgba(88,166,255,.4)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg2);cursor:pointer}
+.btn-row{display:flex;gap:8px;margin-bottom:16px}
+.btn{padding:8px 18px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit;flex:1}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{box-shadow:0 0 16px rgba(63,185,80,.35)}
+.btn-primary.active{background:var(--orange)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{box-shadow:0 0 16px rgba(248,81,73,.35)}
+.readout{border-top:1px solid var(--border);padding-top:12px;margin-top:4px}
+.readout-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.readout-row .label{color:var(--text2)}
+.readout-row .value{font-family:'JetBrains Mono',monospace;font-weight:500}
+.val-cyan{color:var(--cyan)}.val-green{color:var(--green)}.val-orange{color:var(--orange)}.val-red{color:var(--red)}.val-purple{color:var(--purple)}.val-yellow{color:var(--yellow)}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-track{background:transparent}
+.panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+@media(max-width:768px){.main{flex-direction:column}.panel{width:100%;max-height:40vh;border-left:none;border-top:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="../index.html" class="back-btn">返回</a>
+  <h1>电磁感应</h1>
+  <span class="badge">EM Induction</span>
+</div>
+<div class="main">
+  <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+  <div class="panel">
+    <h2>参数控制</h2>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="playBtn">▶ 运行</button>
+      <button class="btn btn-danger" id="resetBtn">↺ 重置</button>
+    </div>
+    <div class="ctrl-group">
+      <label>磁场强度 B <span id="bVal">1.0</span> T</label>
+      <input type="range" id="bSlider" min="0.1" max="3" step="0.1" value="1.0">
+    </div>
+    <div class="ctrl-group">
+      <label>线圈匝数 N <span id="nVal">50</span></label>
+      <input type="range" id="nSlider" min="10" max="200" step="5" value="50">
+    </div>
+    <div class="ctrl-group">
+      <label>旋转速度 <span id="rotVal">1.0</span>x</label>
+      <input type="range" id="rotSlider" min="0.1" max="3" step="0.1" value="1.0">
+    </div>
+    <div class="ctrl-group">
+      <label>负载电阻 R <span id="rVal">10</span> Ω</label>
+      <input type="range" id="rSlider" min="1" max="50" step="1" value="10">
+    </div>
+    <div class="readout">
+      <h2>实时数据</h2>
+      <div class="readout-row"><span class="label">磁通量 Φ</span><span class="value val-cyan" id="rFlux">0.00 Wb</span></div>
+      <div class="readout-row"><span class="label">感应电动势 ε</span><span class="value val-green" id="rEMF">0.00 V</span></div>
+      <div class="readout-row"><span class="label">感应电流 I</span><span class="value val-orange" id="rCurrent">0.00 A</span></div>
+      <div class="readout-row"><span class="label">线圈角度 θ</span><span class="value val-purple" id="rAngle">0°</span></div>
+      <div class="readout-row"><span class="label">时间</span><span class="value" id="rTime" style="color:var(--text)">0.0 s</span></div>
+    </div>
+  </div>
+</div>
+<script>
+const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
+const playBtn=document.getElementById('playBtn'),resetBtn=document.getElementById('resetBtn');
+const bSlider=document.getElementById('bSlider'),nSlider=document.getElementById('nSlider');
+const rotSlider=document.getElementById('rotSlider'),rSlider=document.getElementById('rSlider');
+const rFlux=document.getElementById('rFlux'),rEMF=document.getElementById('rEMF');
+const rCurrent=document.getElementById('rCurrent'),rAngle=document.getElementById('rAngle'),rTime=document.getElementById('rTime');
+const bVal=document.getElementById('bVal'),nVal=document.getElementById('nVal'),rotVal=document.getElementById('rotVal'),rVal=document.getElementById('rVal');
+
+let running=false,time=0,angle=0;
+const graphData=[];
+let W,H,cx,cy,coilR=80;
+
+function resize(){
+  const r=canvas.parentElement.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  W=r.width;H=r.height;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  cx=W/3;cy=H/2;coilR=Math.min(100,Math.min(W,H)*0.2);
+}
+window.addEventListener('resize',resize);
+
+function update(dt){
+  if(!running)return;
+  const speed=+rotSlider.value;
+  angle+=0.8*speed*dt;
+  time+=dt;
+  const B=+bSlider.value,N=+nSlider.value,R=+rSlider.value;
+  const A=Math.PI*0.3*0.3; // coil area
+  const flux=B*A*N*Math.cos(angle);
+  const emf=B*A*N*Math.sin(angle)*0.8*speed; // dΦ/dt
+  const current=emf/R;
+  graphData.push({t:time,flux,emf,current});
+  if(graphData.length>600)graphData.shift();
+  rFlux.textContent=flux.toFixed(2)+' Wb';
+  rEMF.textContent=emf.toFixed(2)+' V';
+  rCurrent.textContent=Math.abs(current).toFixed(3)+' A';
+  rAngle.textContent=((angle*180/Math.PI)%360).toFixed(0)+'°';
+  rTime.textContent=time.toFixed(1)+' s';
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(48,54,61,0.3)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  // Magnetic field background (dots)
+  for(let x=40;x<W;x+=50)
+    for(let y=40;y<H;y+=50){
+      const d=Math.hypot(x-cx,y-cy);
+      if(d>coilR+30){
+        ctx.fillStyle='rgba(163,113,247,0.15)';ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+      }
+    }
+  // Coil (rotating rectangle)
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(angle);
+  // Coil sides
+  ctx.strokeStyle='rgba(210,153,34,0.8)';ctx.lineWidth=3;
+  ctx.strokeRect(-coilR*0.5,-coilR,coilR,coilR*2);
+  // Coil turns (multiple loops)
+  ctx.strokeStyle='rgba(210,153,34,0.3)';ctx.lineWidth=1;
+  for(let i=1;i<4;i++){
+    const f=i/4;
+    ctx.strokeRect(-coilR*0.5*f,-coilR*f,coilR*f,coilR*2*f);
+  }
+  // Wire connections
+  ctx.strokeStyle='rgba(210,153,34,0.6)';ctx.lineWidth=2;
+  // Brushes and slip rings
+  ctx.fillStyle='rgba(139,148,158,0.5)';
+  ctx.beginPath();ctx.arc(coilR*0.5,coilR+15,6,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(-coilR*0.5,coilR+15,6,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  // External circuit
+  ctx.strokeStyle='rgba(139,148,158,0.4)';ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(cx+coilR*0.5,cy+coilR+15);
+  ctx.lineTo(cx+coilR*0.5+40,cy+coilR+15);
+  ctx.lineTo(cx+coilR*0.5+40,cy+coilR+60);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx-coilR*0.5,cy+coilR+15);
+  ctx.lineTo(cx-coilR*0.5-40,cy+coilR+15);
+  ctx.lineTo(cx-coilR*0.5-40,cy+coilR+60);
+  ctx.lineTo(cx+coilR*0.5+40,cy+coilR+60);
+  ctx.stroke();
+  // Resistor symbol
+  const rx=cx-20,ry=cy+coilR+40;
+  ctx.strokeStyle='rgba(139,148,158,0.6)';ctx.lineWidth=2.5;
+  ctx.beginPath();
+  ctx.moveTo(rx-30,ry);ctx.lineTo(rx-20,ry);
+  for(let i=0;i<5;i++){ctx.lineTo(rx-12+i*6,ry-8+i%2*16);}
+  ctx.lineTo(rx+18,ry);ctx.lineTo(rx+30,ry);
+  ctx.stroke();
+  ctx.fillStyle='rgba(139,148,158,0.5)';ctx.font='10px sans-serif';ctx.textAlign='center';
+  ctx.fillText('R='+rSlider.value+'Ω',rx,ry+20);
+  // Galvanometer indicator
+  if(running){
+    const emf=+bSlider.value*Math.PI*0.3*0.3*+nSlider.value*Math.sin(angle)*0.8*(+rotSlider.value);
+    const def=Math.max(-30,Math.min(30,emf*5));
+    const gx=rx+15,gy=ry-50;
+    ctx.strokeStyle='rgba(139,148,158,0.3)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(gx,gy,25,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='rgba(248,81,73,0.8)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(gx,gy);ctx.lineTo(gx+def,gy-15);ctx.stroke();
+    ctx.fillStyle='rgba(139,148,158,0.3)';ctx.font='8px sans-serif';ctx.textAlign='center';
+    ctx.fillText('G',gx,gy+20);
+  }
+  // Graph (flux/emf vs time)
+  if(graphData.length>2){
+    const gx=W-230,gy=20,gw=200,gh=120;
+    ctx.fillStyle='rgba(22,27,34,0.9)';ctx.fillRect(gx,gy,gw,gh);
+    ctx.strokeStyle='var(--border)';ctx.lineWidth=1;ctx.strokeRect(gx,gy,gw,gh);
+    ctx.fillStyle='rgba(139,148,158,0.4)';ctx.font='9px sans-serif';ctx.textAlign='left';
+    ctx.fillText('Φ/ε - t',gx+4,gy+10);
+    // Find bounds
+    const maxFlux=Math.max(0.1,...graphData.map(d=>Math.abs(d.flux)));
+    const maxEMF=Math.max(0.1,...graphData.map(d=>Math.abs(d.emf)));
+    const maxT=Math.max(0.1,graphData[graphData.length-1].t);
+    // Flux (cyan)
+    ctx.strokeStyle='rgba(88,166,255,0.7)';ctx.lineWidth=1.5;
+    ctx.beginPath();
+    for(let i=0;i<graphData.length;i++){
+      const x=gx+5+(graphData[i].t/maxT)*(gw-10);
+      const y=gy+gh/2-(graphData[i].flux/maxFlux)*(gh/2-5);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    // EMF (green)
+    ctx.strokeStyle='rgba(63,185,80,0.7)';ctx.lineWidth=1.5;
+    ctx.beginPath();
+    for(let i=0;i<graphData.length;i++){
+      const x=gx+5+(graphData[i].t/maxT)*(gw-10);
+      const y=gy+gh/2-(graphData[i].emf/maxEMF)*(gh/2-5);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    // Center line
+    ctx.strokeStyle='rgba(139,148,158,0.2)';ctx.lineWidth=1;ctx.setLineDash([2,2]);
+    ctx.beginPath();ctx.moveTo(gx+5,gy+gh/2);ctx.lineTo(gx+gw-5,gy+gh/2);ctx.stroke();ctx.setLineDash([]);
+  }
+  // Labels
+  ctx.fillStyle='rgba(139,148,158,0.3)';ctx.font='11px sans-serif';ctx.textAlign='left';
+  ctx.fillText('B = '+bSlider.value+' T, N = '+nSlider.value,12,H-12);
+}
+
+function resetSim(){
+  running=false;angle=0;time=0;
+  graphData.length=0;
+  playBtn.textContent='▶ 运行';playBtn.classList.remove('active');
+}
+function togglePlay(){
+  running=!running;
+  playBtn.textContent=running?'⏸ 暂停':'▶ 运行';
+  playBtn.classList.toggle('active',running);
+}
+playBtn.addEventListener('click',togglePlay);
+resetBtn.addEventListener('click',resetSim);
+bSlider.addEventListener('input',()=>{bVal.textContent=(+bSlider.value).toFixed(1)});
+nSlider.addEventListener('input',()=>{nVal.textContent=(+nSlider.value).toFixed(0)});
+rotSlider.addEventListener('input',()=>{rotVal.textContent=(+rotSlider.value).toFixed(1)});
+rSlider.addEventListener('input',()=>{rVal.textContent=(+rSlider.value).toFixed(0)});
+document.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Space'){e.preventDefault();togglePlay()}if(e.key==='r'||e.key==='R')resetSim()});
+
+let lastTime=0;
+const FIXED_DT=1/60;
+function loop(t){
+  requestAnimationFrame(loop);
+  if(lastTime===0)lastTime=t;
+  let ft=(t-lastTime)/1000;lastTime=t;
+  if(ft>.1)ft=.1;
+  const dt=FIXED_DT;
+  update(dt);
+  draw();
+}
+resize();resetSim();loop(0);
+</script>
+</body>
+</html>
