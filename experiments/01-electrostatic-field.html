@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>静电场 - 3D空间可视化</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #0a0e17 0%, #1a1f35 100%);
+    color: #e0e0e0;
+    min-height: 100vh;
+    overflow: hidden;
+}
+.back-btn{
+  color:var(--text2);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:6px;
+  transition:all .2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 99;
+}
+.back-btn:hover{
+  color:var(--text);
+  background:var(--bg3);
+}
+.back-btn::before{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(45deg);
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+    gap: 15px;
+    padding: 15px;
+}
+
+
+.canvas-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
+    background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding: 8px 20px;
+    border-radius: 8px;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+canvas {
+    border: 2px solid #3a3f5c;
+    border-radius: 12px;
+    cursor: grab;
+    background: #0d1117;
+    box-shadow: 0 0 30px rgba(0, 100, 255, 0.15);
+}
+
+canvas:active { cursor: grabbing; }
+
+.info-panel {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    background: rgba(10, 14, 23, 0.9);
+    border: 1px solid #3a3f5c;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    line-height: 1.6;
+    backdrop-filter: blur(8px);
+    min-width: 210px;
+    pointer-events: none;
+}
+
+.info-panel span { color: #00d4ff; font-weight: bold; }
+
+.mode-indicator {
+    position: absolute;
+    top: 60px;
+    left: 15px;
+    background: rgba(10, 14, 23, 0.85);
+    border: 1px solid #3a3f5c;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    backdrop-filter: blur(8px);
+}
+
+.control-panel {
+    width: 310px;
+    background: rgba(20, 25, 45, 0.95);
+    border: 1px solid #3a3f5c;
+    border-radius: 12px;
+    padding: 14px;
+    overflow-y: auto;
+    max-height: calc(100vh - 30px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 20px rgba(123, 44, 191, 0.2);
+}
+
+.control-section {
+    margin-bottom: 16px;
+    border-bottom: 1px solid #2a2f4a;
+    padding-bottom: 14px;
+}
+
+.control-section:last-child { border-bottom: none; }
+
+.control-section h3 {
+    font-size: 14px;
+    margin-bottom: 10px;
+    color: #7b8cff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 12px;
+    color: #a0a5c0;
+}
+
+select, button {
+    width: 100%;
+    padding: 7px 9px;
+    margin-bottom: 8px;
+    background: #1a1f35;
+    border: 1px solid #3a3f5c;
+    border-radius: 6px;
+    color: #e0e0e0;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+select:hover, button:hover {
+    background: #2a2f4a;
+    border-color: #7b2cbf;
+}
+
+button.primary {
+    background: linear-gradient(90deg, #7b2cbf, #00d4ff);
+    border: none;
+    font-weight: bold;
+}
+
+button.primary:hover { filter: brightness(1.15); }
+
+button.danger {
+    background: linear-gradient(90deg, #cc3333, #ff5555);
+    border: none;
+    width: auto;
+    padding: 3px 9px;
+    font-size: 11px;
+}
+
+.btn-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.btn-group button { flex: 1; }
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+.slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.slider-row label { min-width: 45px; margin: 0; }
+
+.slider-row input[type="range"] {
+    flex: 1;
+    accent-color: #00d4ff;
+}
+
+.slider-row .value {
+    min-width: 35px;
+    text-align: right;
+    color: #00d4ff;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.charge-item {
+    background: #151930;
+    border: 1px solid #2a2f4a;
+    border-radius: 7px;
+    padding: 9px;
+    margin-bottom: 8px;
+}
+
+.charge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.charge-header .charge-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.charge-icon.positive { background: #e74c3c; color: white; }
+.charge-icon.negative { background: #3498db; color: white; }
+
+.toggle-btn {
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 3px;
+    width: auto;
+    margin: 0;
+}
+
+.toggle-btn.positive { background: #e74c3c; border-color: #c0392b; }
+.toggle-btn.negative { background: #3498db; border-color: #2980b9; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #0a0e17; }
+::-webkit-scrollbar-thumb { background: #3a3f5c; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #5a5f7c; }
+
+.instructions-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+}
+
+.instructions-overlay.active { display: flex; }
+
+.instructions-box {
+    background: rgba(20, 25, 45, 0.98);
+    border: 2px solid #3a3f5c;
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 650px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 0 50px rgba(0, 212, 255, 0.3);
+}
+
+.instructions-box h2 {
+    color: #00d4ff;
+    margin-bottom: 20px;
+    font-size: 20px;
+    text-align: center;
+}
+
+.instructions-box h3 {
+    color: #7b8cff;
+    margin: 16px 0 8px 0;
+    font-size: 16px;
+}
+
+.instructions-box p {
+    color: #a0a5c0;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 8px;
+}
+
+.instructions-box ul {
+    padding-left: 20px;
+    margin-bottom: 10px;
+}
+
+.instructions-box li {
+    color: #c0c5e0;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.instructions-box .close-btn {
+    display: block;
+    margin: 20px auto 0;
+    padding: 8px 30px;
+    background: linear-gradient(90deg, #7b2cbf, #00d4ff);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    width: auto;
+}
+
+.legend {
+    display: flex;
+    gap: 15px;
+    margin: 10px 0;
+    font-size: 12px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.legend-dot.red { background: #e74c3c; }
+.legend-dot.blue { background: #3498db; }
+.legend-dot.green { background: rgba(0, 255, 200, 0.65); }
+.legend-dot.orange { background: rgba(255, 140, 30, 0.85); }
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="canvas-wrapper">
+        <a href="../index.html" class="back-btn">返回</a>
+        <h1>静电场 3D空间可视化</h1>
+        <canvas id="canvas3d" width="850" height="700"></canvas>
+        
+        <div class="mode-indicator">
+            <span id="modeText">3D模式</span>
+        </div>
+        
+        <div class="info-panel">
+            <span id="coordInfo">X: 0 Y: 0 Z: 0</span><br>
+            电场强度 |E|: <span id="fieldMag">0.00</span><br>
+            电势 V: <span id="potential">0.00</span>
+        </div>
+    </div>
+    
+    <div class="control-panel">
+        <div class="control-section">
+            <h3>显示模式</h3>
+            <div class="btn-group">
+                <button id="btn3d" class="primary" onclick="setMode(3)">3D模式</button>
+                <button id="btn2d" onclick="setMode(2)">2D模式</button>
+            </div>
+        </div>
+        
+        <div class="control-section">
+            <h3>预设场景</h3>
+            <select id="presetSelect">
+                <option value="positive">单正点电荷 (+q)</option>
+                <option value="negative">单负点电荷 (-q)</option>
+                <option value="same">等量同种电荷 (+q, +q)</option>
+                <option value="dipole">等量异种电荷 (+q, -q)</option>
+                <option value="three">三电荷系统 (+q, -q, +q)</option>
+            </select>
+        </div>
+        
+        <div class="control-section">
+            <h3>显示选项</h3>
+            <div class="checkbox-group">
+                <input type="checkbox" id="showFieldLines" checked>
+                <label for="showFieldLines">显示电场线</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="showEquipotential" checked>
+                <label for="showEquipotential">显示等势线</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="showAxes" checked>
+                <label for="showAxes">显示坐标轴</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="showArrows" checked>
+                <label for="showArrows">显示电场方向箭头</label>
+            </div>
+        </div>
+        
+        <div class="control-section">
+            <h3>3D视角控制</h3>
+            <div class="slider-row">
+                <label>旋转X:</label>
+                <input type="range" id="rotX" min="-180" max="180" step="5" value="-30">
+                <span class="value" id="rotXVal">-30°</span>
+            </div>
+            <div class="slider-row">
+                <label>旋转Y:</label>
+                <input type="range" id="rotY" min="-180" max="180" step="5" value="40">
+                <span class="value" id="rotYVal">40°</span>
+            </div>
+            <div class="slider-row">
+                <label>缩放:</label>
+                <input type="range" id="zoom" min="0.5" max="3" step="0.1" value="1.2">
+                <span class="value" id="zoomVal">1.2x</span>
+            </div>
+        </div>
+        
+        <div class="control-section">
+            <h3>电荷管理</h3>
+            <div class="add-charge-form" style="background:#151930;border-radius:7px;padding:9px;margin-bottom:10px;">
+                <div style="font-size:12px;color:#7b8cff;margin-bottom:6px;">新电荷参数</div>
+                <div class="slider-row">
+                    <label>X:</label>
+                    <input type="range" id="newChargeX" min="-200" max="200" step="5" value="0" oninput="document.getElementById('newChargeXVal').textContent=this.value">
+                    <span class="value" id="newChargeXVal" style="min-width:35px;">0</span>
+                </div>
+                <div class="slider-row">
+                    <label>Y:</label>
+                    <input type="range" id="newChargeY" min="-200" max="200" step="5" value="0" oninput="document.getElementById('newChargeYVal').textContent=this.value">
+                    <span class="value" id="newChargeYVal" style="min-width:35px;">0</span>
+                </div>
+                <div class="slider-row">
+                    <label>Z:</label>
+                    <input type="range" id="newChargeZ" min="-200" max="200" step="5" value="0" oninput="document.getElementById('newChargeZVal').textContent=this.value">
+                    <span class="value" id="newChargeZVal" style="min-width:35px;">0</span>
+                </div>
+                <div class="slider-row">
+                    <label>|Q|:</label>
+                    <input type="range" id="newChargeQ" min="0.1" max="10" step="0.1" value="1" oninput="document.getElementById('newChargeQVal').textContent=parseFloat(this.value).toFixed(1)">
+                    <span class="value" id="newChargeQVal" style="min-width:35px;">1.0</span>
+                </div>
+                <div class="slider-row" style="margin-bottom:6px;">
+                    <label>电性:</label>
+                    <select id="newChargeSign" style="flex:1;margin:0;padding:4px;font-size:12px;">
+                        <option value="positive">正电荷 (+)</option>
+                        <option value="negative">负电荷 (−)</option>
+                    </select>
+                </div>
+                <button class="primary" onclick="addNewCharge()">添加此电荷</button>
+            </div>
+            <div id="chargeList"></div>
+        </div>
+        
+        <div class="control-section">
+            <h3>使用说明</h3>
+            <button class="primary" onclick="showInstructions()">查看使用说明</button>
+        </div>
+    </div>
+</div>
+
+<div class="instructions-overlay" id="instructionsOverlay" onclick="hideInstructions(event)">
+    <div class="instructions-box" onclick="event.stopPropagation()">
+        <h2>静电场 3D空间可视化 - 使用说明</h2>
+        
+        <h3>1. 物理模型</h3>
+        <ul>
+            <li>基于库仑定律 E = kQ/r² 和电势叠加原理 V = Σ(kQᵢ/rᵢ)</li>
+            <li>支持最多10个点电荷，每个电荷可独立调整电量和电性</li>
+            <li>电场线采用RK4积分方法追踪，等势线使用Marching Squares算法</li>
+        </ul>
+        
+        <h3>2. 3D模式操作</h3>
+        <ul>
+            <li>左键拖拽旋转视角（X/Y方向）</li>
+            <li>右键拖拽平移视角</li>
+            <li>滚轮缩放视图</li>
+            <li>左侧控制面板可精确调节旋转角度和缩放比例</li>
+        </ul>
+        
+        <h3>3. 2D模式操作</h3>
+        <ul>
+            <li>直接鼠标拖拽电荷移动位置</li>
+            <li>电场线和等势线实时更新</li>
+            <li>鼠标悬浮显示该点的电场强度和电势</li>
+        </ul>
+        
+        <h3>4. 可视化元素</h3>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-dot red"></div>正电荷</div>
+            <div class="legend-item"><div class="legend-dot blue"></div>负电荷</div>
+            <div class="legend-item"><div class="legend-dot green"></div>等势线</div>
+            <div class="legend-item"><div class="legend-dot orange"></div>零等势线</div>
+        </div>
+        <ul>
+            <li>电场线：淡灰白色曲线，箭头指示方向，线密度反映电场强弱</li>
+            <li>等势线：青绿色曲线，表示电势相等的点的集合</li>
+            <li>零等势线：橙色实线，表示电势为0的特殊等势线（常见于异种电荷之间）</li>
+            <li>坐标轴：红色=X轴，绿色=Y轴，蓝色=Z轴</li>
+        </ul>
+        
+        <h3>5. 预设场景</h3>
+        <ul>
+            <li>单正/负点电荷：基础电场分布</li>
+            <li>等量同种电荷：电场线从正电荷出发至无穷远，存在对称面</li>
+            <li>等量异种电荷（电偶极子）：电场线从正电荷出发全部终止于负电荷</li>
+            <li>三电荷系统：展示更复杂的叠加电场</li>
+        </ul>
+        
+        <h3>6. 交互控制</h3>
+        <ul>
+            <li>添加电荷：点击"添加新电荷"按钮，在画布中心生成</li>
+            <li>拖动电荷：2D模式下直接拖拽，3D模式下使用控制面板</li>
+            <li>调节电量：滑动滑块实时改变电荷量，电场线和等势线即时重绘</li>
+            <li>切换电性：点击"切换为负/为正"按钮</li>
+            <li>删除电荷：点击"删除"按钮移除指定电荷</li>
+        </ul>
+        
+        <h3>7. 技术说明</h3>
+        <p>纯HTML+CSS+JavaScript实现，无任何第三方依赖。3D投影采用透视投影矩阵实现。</p>
+        
+        <button class="close-btn" onclick="hideInstructions()">关闭说明</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas3d');
+const ctx = canvas.getContext('2d');
+const k = 1;
+const MAX_CHARGES = 10;
+const FIELD_LINE_COUNT = 16;
+const STEP_SIZE_3D = 4;
+const MAX_STEPS = 600;
+const EQUIPOTENTIAL_COUNT = 25;
+
+const WORLD_SCALE = 1.0;
+const cx = canvas.width / 2;
+const cy = canvas.height / 2;
+
+let charges = [];
+let chargeIdCounter = 0;
+let needsRedraw = true;
+
+let mode = 3;
+let rotX = -30, rotY = 40, zoomLevel = 1.2;
+let panX = 0, panY = 0;
+let dragging = false, dragButton = 0;
+let lastMouse = { x: 0, y: 0 };
+let mouseWorld = { x: 0, y: 0, z: 0 };
+let mouseScreen = { x: -1000, y: -1000 };
+
+let pan2D = { x: 0, y: 0 };
+
+class Charge {
+    constructor(x, y, z, q, id) {
+        this.x = x; this.y = y; this.z = z;
+        this.q = q; this.id = id;
+    }
+}
+
+function setMode(m) {
+    mode = m;
+    document.getElementById('btn3d').className = m === 3 ? 'primary' : '';
+    document.getElementById('btn2d').className = m === 2 ? 'primary' : '';
+    document.getElementById('modeText').textContent = m === 3 ? '3D模式' : '2D模式';
+    canvas.style.cursor = m === 3 ? 'grab' : 'crosshair';
+    needsRedraw = true;
+}
+
+function project(x, y, z) {
+    const radX = rotX * Math.PI / 180;
+    const radY = rotY * Math.PI / 180;
+    
+    let x1 = x * Math.cos(radY) - z * Math.sin(radY);
+    let z1 = x * Math.sin(radY) + z * Math.cos(radY);
+    let y1 = y * Math.cos(radX) - z1 * Math.sin(radX);
+    let z2 = y * Math.sin(radX) + z1 * Math.cos(radX);
+    
+    const perspective = 800;
+    const scale = perspective / (perspective + z2) * zoomLevel;
+    
+    return {
+        sx: canvas.width / 2 + (x1 * scale) + panX,
+        sy: canvas.height / 2 - (y1 * scale) + panY,
+        z: z2,
+        scale: scale
+    };
+}
+
+function addCharge(x, y, z, q, skipUpdate = false) {
+    if (charges.length >= MAX_CHARGES) return;
+    const c = new Charge(x, y, z, q, chargeIdCounter++);
+    charges.push(c);
+    if (!skipUpdate) updateChargeList();
+    needsRedraw = true;
+    return c;
+}
+
+function removeCharge(id) {
+    charges = charges.filter(c => c.id !== id);
+    updateChargeList();
+    needsRedraw = true;
+}
+
+function toggleChargeSign(id) {
+    const c = charges.find(ch => ch.id === id);
+    if (c) {
+        c.q = -c.q;
+        updateChargeList();
+        needsRedraw = true;
+    }
+}
+
+function setChargeQ(id, q) {
+    const c = charges.find(ch => ch.id === id);
+    if (c) {
+        c.q = parseFloat(q) * Math.sign(c.q);
+        if (Math.abs(c.q) < 0.1) c.q = 0.1 * Math.sign(c.q);
+        needsRedraw = true;
+    }
+}
+
+function computeField(x, y, z) {
+    let Ex = 0, Ey = 0, Ez = 0, V = 0;
+    for (const c of charges) {
+        const dx = x - c.x, dy = y - c.y, dz = z - c.z;
+        const r2 = dx * dx + dy * dy + dz * dz;
+        const r = Math.sqrt(r2);
+        if (r < 8) continue;
+        const E = k * c.q / r2;
+        Ex += E * (dx / r); Ey += E * (dy / r); Ez += E * (dz / r);
+        V += k * c.q / r;
+    }
+    return { Ex, Ey, Ez, V };
+}
+
+function traceFieldLine3D(startX, startY, startZ, direction) {
+    const points = [];
+    let x = startX, y = startY, z = startZ;
+    for (let i = 0; i < MAX_STEPS; i++) {
+        points.push({ x, y, z });
+        const field = computeField(x, y, z);
+        const mag = Math.sqrt(field.Ex * field.Ex + field.Ey * field.Ey + field.Ez * field.Ez);
+        if (mag < 0.00001) break;
+        const step = STEP_SIZE_3D * direction;
+        const nx = field.Ex / mag, ny = field.Ey / mag, nz = field.Ez / mag;
+        x += nx * step; y += ny * step; z += nz * step;
+        if (Math.abs(x) > 1200 || Math.abs(y) > 1200 || Math.abs(z) > 1200) break;
+        let tooClose = false;
+        for (const c of charges) {
+            const dx = x - c.x, dy = y - c.y, dz = z - c.z;
+            if (dx * dx + dy * dy + dz * dz < 625) {
+                if (direction > 0 && c.q < 0 || direction < 0 && c.q > 0) {
+                    points.push({ x, y, z });
+                    tooClose = true;
+                    break;
+                }
+                if (dx * dx + dy * dy + dz * dz < 225) {
+                    tooClose = true;
+                    break;
+                }
+            }
+        }
+        if (tooClose) break;
+    }
+    return points;
+}
+
+function drawSphere3D(cx, cy, cz, radius, color, glowColor) {
+    const p = project(cx, cy, cz);
+    const r = radius * p.scale;
+    
+    const grad = ctx.createRadialGradient(p.sx - r * 0.3, p.sy - r * 0.3, r * 0.1, p.sx, p.sy, r * 2);
+    grad.addColorStop(0, glowColor);
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(p.sx, p.sy, r * 2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    const sphereGrad = ctx.createRadialGradient(p.sx - r * 0.3, p.sy - r * 0.3, r * 0.1, p.sx, p.sy, r);
+    sphereGrad.addColorStop(0, '#ffffff');
+    sphereGrad.addColorStop(0.3, color);
+    sphereGrad.addColorStop(1, color + '88');
+    ctx.fillStyle = sphereGrad;
+    ctx.beginPath();
+    ctx.arc(p.sx, p.sy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff55';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+}
+
+function drawAxes3D() {
+    const len = 80;
+    const origin = project(0, 0, 0);
+    const xEnd = project(len, 0, 0);
+    const yEnd = project(0, len, 0);
+    const zEnd = project(0, 0, len);
+    
+    ctx.lineWidth = 2;
+    
+    ctx.strokeStyle = '#ff5555';
+    ctx.beginPath();
+    ctx.moveTo(origin.sx, origin.sy);
+    ctx.lineTo(xEnd.sx, xEnd.sy);
+    ctx.stroke();
+    ctx.fillStyle = '#ff5555';
+    ctx.font = 'bold 12px Arial';
+    ctx.fillText('X', xEnd.sx + 5, xEnd.sy);
+    
+    ctx.strokeStyle = '#55ff55';
+    ctx.beginPath();
+    ctx.moveTo(origin.sx, origin.sy);
+    ctx.lineTo(yEnd.sx, yEnd.sy);
+    ctx.stroke();
+    ctx.fillStyle = '#55ff55';
+    ctx.fillText('Y', yEnd.sx + 5, yEnd.sy);
+    
+    ctx.strokeStyle = '#5555ff';
+    ctx.beginPath();
+    ctx.moveTo(origin.sx, origin.sy);
+    ctx.lineTo(zEnd.sx, zEnd.sy);
+    ctx.stroke();
+    ctx.fillStyle = '#5555ff';
+    ctx.fillText('Z', zEnd.sx + 5, zEnd.sy);
+}
+
+function drawCharge3D(c) {
+    const radius = 12 + Math.abs(c.q) * 2;
+    const isPositive = c.q > 0;
+    drawSphere3D(c.x, c.y, c.z, radius,
+        isPositive ? '#e74c3c' : '#3498db',
+        isPositive ? 'rgba(231, 76, 60, 0.3)' : 'rgba(52, 152, 219, 0.3)');
+    
+    const p = project(c.x, c.y, c.z);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${14 * p.scale}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(isPositive ? '+' : '−', p.sx, p.sy);
+}
+
+let allFieldLinePoints = [];
+
+function computeFieldLinePoints3D() {
+    allFieldLinePoints = [];
+    const starts = [];
+    for (const c of charges) {
+        if (c.q > 0) {
+            const numLines = Math.round(FIELD_LINE_COUNT * Math.abs(c.q));
+            for (let i = 0; i < numLines; i++) {
+                const theta = Math.acos(1 - 2 * (i + 0.5) / numLines);
+                const phi = Math.PI * (1 + Math.sqrt(5)) * i;
+                const r = 20;
+                starts.push({
+                    x: c.x + r * Math.sin(theta) * Math.cos(phi),
+                    y: c.y + r * Math.sin(theta) * Math.sin(phi),
+                    z: c.z + r * Math.cos(theta)
+                });
+            }
+        }
+    }
+    
+    for (const c of charges) {
+        if (c.q < 0) {
+            const numLines = Math.round(FIELD_LINE_COUNT * Math.abs(c.q));
+            for (let i = 0; i < numLines; i++) {
+                const theta = Math.acos(1 - 2 * (i + 0.5) / numLines);
+                const phi = Math.PI * (1 + Math.sqrt(5)) * i;
+                const r = 350;
+                starts.push({
+                    x: c.x + r * Math.sin(theta) * Math.cos(phi),
+                    y: c.y + r * Math.sin(theta) * Math.sin(phi),
+                    z: c.z + r * Math.cos(theta)
+                });
+            }
+        }
+    }
+    
+    if (starts.length === 0) {
+        for (let i = 0; i < 40; i++) {
+            const theta = Math.random() * Math.PI;
+            const phi = Math.random() * 2 * Math.PI;
+            const r = 550;
+            starts.push({
+                x: r * Math.sin(theta) * Math.cos(phi),
+                y: r * Math.sin(theta) * Math.sin(phi),
+                z: r * Math.cos(theta)
+            });
+        }
+    }
+    
+    for (const start of starts) {
+        const forwardPoints = traceFieldLine3D(start.x, start.y, start.z, 1);
+        if (forwardPoints.length > 1) {
+            allFieldLinePoints.push(forwardPoints);
+        }
+    }
+}
+
+function drawFieldLines3D() {
+    computeFieldLinePoints3D();
+    
+    for (const forwardPoints of allFieldLinePoints) {
+        const allProjected = [];
+        for (let i = 0; i < forwardPoints.length; i++) {
+            allProjected.push(project(forwardPoints[i].x, forwardPoints[i].y, forwardPoints[i].z));
+        }
+        
+        ctx.lineWidth = 3;
+        for (let i = 0; i < allProjected.length - 1; i++) {
+            const p1 = allProjected[i];
+            const p2 = allProjected[i + 1];
+            
+            const distFromCenter = Math.sqrt(forwardPoints[i].x ** 2 + forwardPoints[i].y ** 2 + forwardPoints[i].z ** 2);
+            const alpha = Math.min(0.95, Math.max(0.6, 0.92 - distFromCenter / 1000));
+            
+            ctx.strokeStyle = `rgba(255, 220, 80, ${alpha})`;
+            ctx.beginPath();
+            ctx.moveTo(p1.sx, p1.sy);
+            ctx.lineTo(p2.sx, p2.sy);
+            ctx.stroke();
+        }
+    }
+}
+
+function drawFieldArrows3D() {
+    if (!document.getElementById('showArrows').checked) return;
+    if (allFieldLinePoints.length === 0) computeFieldLinePoints3D();
+    
+    for (const forwardPoints of allFieldLinePoints) {
+        if (forwardPoints.length < 10) continue;
+        
+        const allProjected = [];
+        for (let i = 0; i < forwardPoints.length; i++) {
+            allProjected.push(project(forwardPoints[i].x, forwardPoints[i].y, forwardPoints[i].z));
+        }
+        
+        let arrowCount = 0;
+        const MAX_ARROWS_PER_LINE = 8;
+        const step = Math.max(1, Math.floor((allProjected.length - 10) / MAX_ARROWS_PER_LINE));
+        
+        for (let i = 5; i < allProjected.length - 5 && arrowCount < MAX_ARROWS_PER_LINE; i += step) {
+            const prev = allProjected[i - 2];
+            const curr = allProjected[i];
+            const next = allProjected[i + 2];
+            
+            const dx = next.sx - prev.sx;
+            const dy = next.sy - prev.sy;
+            const len = Math.hypot(dx, dy);
+            if (len < 2) continue;
+            
+            const angle = Math.atan2(dy, dx);
+            const arrowLen = 20;
+            const arrowWidth = 12;
+            
+            ctx.save();
+            ctx.translate(curr.sx, curr.sy);
+            ctx.rotate(angle);
+            
+            ctx.shadowColor = 'rgba(255, 0, 0, 1)';
+            ctx.shadowBlur = 18;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            ctx.fillStyle = '#FF1100';
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(arrowLen, 0);
+            ctx.lineTo(-arrowLen * 0.3, -arrowWidth);
+            ctx.lineTo(-arrowLen * 0.1, -arrowWidth * 0.2);
+            ctx.lineTo(-arrowLen * 0.1, arrowWidth * 0.2);
+            ctx.lineTo(-arrowLen * 0.3, arrowWidth);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.moveTo(arrowLen * 0.5, 0);
+            ctx.lineTo(-arrowLen * 0.15, -arrowWidth * 0.35);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(-arrowLen * 0.15, arrowWidth * 0.35);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.restore();
+            arrowCount++;
+        }
+    }
+}
+
+function computeEquipotentialSlice(gridY, res, range, levels) {
+    const cols = Math.floor(2 * range / res) + 1;
+    const rows = cols;
+    const grid = [];
+    
+    for (let j = 0; j < rows; j++) {
+        const row = [];
+        for (let i = 0; i < cols; i++) {
+            const x = (i * res) - range;
+            const z = (j * res) - range;
+            const field = computeField(x, gridY, z);
+            row.push(field.V);
+        }
+        grid.push(row);
+    }
+    
+    const segments = [];
+    for (const level of levels) {
+        for (let j = 0; j < rows - 1; j++) {
+            for (let i = 0; i < cols - 1; i++) {
+                const v00 = grid[j][i], v10 = grid[j][i + 1];
+                const v01 = grid[j + 1][i], v11 = grid[j + 1][i + 1];
+                const b00 = v00 >= level ? 1 : 0, b10 = v10 >= level ? 1 : 0;
+                const b01 = v01 >= level ? 1 : 0, b11 = v11 >= level ? 1 : 0;
+                const caseIdx = (b00 << 3) | (b10 << 2) | (b11 << 1) | b01;
+                if (caseIdx === 0 || caseIdx === 15) continue;
+                
+                const interp = (v1, v2, p1, p2) => p1 + (level - v1) / (v2 - v1) * (p2 - p1);
+                const x0 = i * res - range, x1 = x0 + res;
+                const z0 = j * res - range, z1 = z0 + res;
+                
+                const pts = [];
+                if (b00 !== b10) pts.push({ x: interp(v00, v10, x0, x1), z: z0 });
+                if (b10 !== b11) pts.push({ x: x1, z: interp(v10, v11, z0, z1) });
+                if (b01 !== b11) pts.push({ x: interp(v01, v11, x0, x1), z: z1 });
+                if (b00 !== b01) pts.push({ x: x0, z: interp(v00, v01, z0, z1) });
+                
+                if (pts.length === 2) {
+                    segments.push({ x1: pts[0].x, z1: pts[0].z, x2: pts[1].x, z2: pts[1].z, y: gridY });
+                }
+            }
+        }
+    }
+    
+    return segments;
+}
+
+function drawEquipotential3D() {
+    const res = 15;
+    const range = 180;
+    
+    let globalMinV = Infinity, globalMaxV = -Infinity;
+    const testGrid = 4;
+    for (let j = 0; j < testGrid; j++) {
+        for (let i = 0; i < testGrid; i++) {
+            const x = (i / testGrid) * 2 * range - range;
+            const z = (j / testGrid) * 2 * range - range;
+            const f = computeField(x, 0, z);
+            if (isFinite(f.V)) {
+                globalMinV = Math.min(globalMinV, f.V);
+                globalMaxV = Math.max(globalMaxV, f.V);
+            }
+        }
+    }
+    
+    const levels = [];
+    const vRange = globalMaxV - globalMinV;
+    for (let i = 1; i < EQUIPOTENTIAL_COUNT; i++) {
+        const level = globalMinV + (vRange * i) / EQUIPOTENTIAL_COUNT;
+        if (isFinite(level) && Math.abs(level) < 1e10) levels.push(level);
+    }
+    
+    const slices = [-120, -60, 0, 60, 120];
+    const allSegments = [];
+    for (const sy of slices) {
+        const segs = computeEquipotentialSlice(sy, res, range, levels);
+        allSegments.push({ y: sy, segments: segs });
+    }
+    
+    allSegments.sort((a, b) => {
+        const pa = project(0, a.y, 0);
+        const pb = project(0, b.y, 0);
+        return pa.z - pb.z;
+    });
+    
+    for (const slice of allSegments) {
+        const sy = slice.y;
+        const distFromCenter = Math.abs(sy) / 120;
+        const alpha = 0.15 + (1 - distFromCenter) * 0.4;
+        const lineW = 1 + (1 - distFromCenter) * 1.5;
+        
+        for (const seg of slice.segments) {
+            const p1 = project(seg.x1, sy, seg.z1);
+            const p2 = project(seg.x2, sy, seg.z2);
+            ctx.strokeStyle = `rgba(0, 255, 200, ${alpha})`;
+            ctx.lineWidth = lineW;
+            ctx.beginPath();
+            ctx.moveTo(p1.sx, p1.sy);
+            ctx.lineTo(p2.sx, p2.sy);
+            ctx.stroke();
+        }
+    }
+    
+    const zeroSegments = computeEquipotentialSlice(0, res, range, [0]);
+    for (const seg of zeroSegments) {
+        const p1 = project(seg.x1, 0, seg.z1);
+        const p2 = project(seg.x2, 0, seg.z2);
+        ctx.strokeStyle = 'rgba(255, 140, 30, 0.95)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(p1.sx, p1.sy);
+        ctx.lineTo(p2.sx, p2.sy);
+        ctx.stroke();
+    }
+}
+
+function drawGrid3D() {
+    ctx.strokeStyle = 'rgba(58, 63, 92, 0.2)';
+    ctx.lineWidth = 1;
+    const range = 300;
+    const step = 50;
+    
+    for (let x = -range; x <= range; x += step) {
+        const p1 = project(x, 0, -range);
+        const p2 = project(x, 0, range);
+        ctx.beginPath();
+        ctx.moveTo(p1.sx, p1.sy);
+        ctx.lineTo(p2.sx, p2.sy);
+        ctx.stroke();
+    }
+    for (let z = -range; z <= range; z += step) {
+        const p1 = project(-range, 0, z);
+        const p2 = project(range, 0, z);
+        ctx.beginPath();
+        ctx.moveTo(p1.sx, p1.sy);
+        ctx.lineTo(p2.sx, p2.sy);
+        ctx.stroke();
+    }
+}
+
+function worldToScreen(wx, wy) {
+    return {
+        sx: canvas.width / 2 + wx * WORLD_SCALE + pan2D.x,
+        sy: canvas.height / 2 - wy * WORLD_SCALE + pan2D.y
+    };
+}
+
+function screenToWorld(sx, sy) {
+    return {
+        wx: (sx - canvas.width / 2 - pan2D.x) / WORLD_SCALE,
+        wy: -(sy - canvas.height / 2 - pan2D.y) / WORLD_SCALE
+    };
+}
+
+function draw2D() {
+    ctx.fillStyle = '#0d1117';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    drawGrid2D();
+    if (document.getElementById('showEquipotential').checked) drawEquipotentialLines2D();
+    if (document.getElementById('showFieldLines').checked) drawFieldLines2D();
+    for (const c of charges) drawCharge2D(c);
+    if (document.getElementById('showFieldLines').checked) drawFieldArrows2D();
+    drawMouseInfo2D();
+}
+
+function drawGrid2D() {
+    ctx.strokeStyle = 'rgba(58, 63, 92, 0.3)';
+    ctx.lineWidth = 1;
+    const range = 350;
+    const step = 50;
+    
+    for (let wx = -range; wx <= range; wx += step) {
+        const p1 = worldToScreen(wx, -range);
+        const p2 = worldToScreen(wx, range);
+        ctx.beginPath();
+        ctx.moveTo(p1.sx, p1.sy);
+        ctx.lineTo(p2.sx, p2.sy);
+        ctx.stroke();
+    }
+    for (let wy = -range; wy <= range; wy += step) {
+        const p1 = worldToScreen(-range, wy);
+        const p2 = worldToScreen(range, wy);
+        ctx.beginPath();
+        ctx.moveTo(p1.sx, p1.sy);
+        ctx.lineTo(p2.sx, p2.sy);
+        ctx.stroke();
+    }
+}
+
+function drawEquipotentialLines2D() {
+    const res = 6;
+    const range = 250;
+    const cols = Math.floor(2 * range / res) + 1;
+    const rows = cols;
+    const grid = [];
+    
+    for (let j = 0; j < rows; j++) {
+        const row = [];
+        for (let i = 0; i < cols; i++) {
+            const wx = (i * res) - range;
+            const wy = (j * res) - range;
+            const field = computeField(wx, wy, 0);
+            row.push(field.V);
+        }
+        grid.push(row);
+    }
+    
+    let minV = Infinity, maxV = -Infinity;
+    for (const row of grid) for (const v of row) {
+        if (isFinite(v)) { minV = Math.min(minV, v); maxV = Math.max(maxV, v); }
+    }
+    
+    const levels = [];
+    const vRange = maxV - minV;
+    for (let i = 1; i < EQUIPOTENTIAL_COUNT; i++) {
+        const level = minV + (vRange * i) / EQUIPOTENTIAL_COUNT;
+        if (isFinite(level) && Math.abs(level) < 1e10) levels.push(level);
+    }
+    
+    for (const level of levels) {
+        for (let j = 0; j < rows - 1; j++) {
+            for (let i = 0; i < cols - 1; i++) {
+                const v00 = grid[j][i], v10 = grid[j][i + 1];
+                const v01 = grid[j + 1][i], v11 = grid[j + 1][i + 1];
+                const b00 = v00 >= level ? 1 : 0, b10 = v10 >= level ? 1 : 0;
+                const b01 = v01 >= level ? 1 : 0, b11 = v11 >= level ? 1 : 0;
+                const caseIdx = (b00 << 3) | (b10 << 2) | (b11 << 1) | b01;
+                if (caseIdx === 0 || caseIdx === 15) continue;
+                
+                const interp = (v1, v2, p1, p2) => p1 + (level - v1) / (v2 - v1) * (p2 - p1);
+                const x0 = i * res - range, x1 = x0 + res, y0 = j * res - range, y1 = y0 + res;
+                const pts = [];
+                if (b00 !== b10) pts.push({ wx: interp(v00, v10, x0, x1), wy: y0 });
+                if (b10 !== b11) pts.push({ wx: x1, wy: interp(v10, v11, y0, y1) });
+                if (b01 !== b11) pts.push({ wx: interp(v01, v11, x0, x1), wy: y1 });
+                if (b00 !== b01) pts.push({ wx: x0, wy: interp(v00, v01, y0, y1) });
+                if (pts.length === 2) {
+                    const p1 = worldToScreen(pts[0].wx, pts[0].wy);
+                    const p2 = worldToScreen(pts[1].wx, pts[1].wy);
+                    ctx.strokeStyle = 'rgba(0, 255, 200, 0.65)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(p1.sx, p1.sy);
+                    ctx.lineTo(p2.sx, p2.sy);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+    
+    for (let j = 0; j < rows - 1; j++) {
+        for (let i = 0; i < cols - 1; i++) {
+            const v00 = grid[j][i], v10 = grid[j][i + 1];
+            const v01 = grid[j + 1][i], v11 = grid[j + 1][i + 1];
+            const b00 = v00 >= 0 ? 1 : 0, b10 = v10 >= 0 ? 1 : 0;
+            const b01 = v01 >= 0 ? 1 : 0, b11 = v11 >= 0 ? 1 : 0;
+            const caseIdx = (b00 << 3) | (b10 << 2) | (b11 << 1) | b01;
+            if (caseIdx === 0 || caseIdx === 15) continue;
+            
+            const interp = (v1, v2, p1, p2) => p1 + (0 - v1) / (v2 - v1) * (p2 - p1);
+            const x0 = i * res - range, x1 = x0 + res, y0 = j * res - range, y1 = y0 + res;
+            const pts = [];
+            if (b00 !== b10) pts.push({ wx: interp(v00, v10, x0, x1), wy: y0 });
+            if (b10 !== b11) pts.push({ wx: x1, wy: interp(v10, v11, y0, y1) });
+            if (b01 !== b11) pts.push({ wx: interp(v01, v11, x0, x1), wy: y1 });
+            if (b00 !== b01) pts.push({ wx: x0, wy: interp(v00, v01, y0, y1) });
+            if (pts.length === 2) {
+                const p1 = worldToScreen(pts[0].wx, pts[0].wy);
+                const p2 = worldToScreen(pts[1].wx, pts[1].wy);
+                ctx.strokeStyle = 'rgba(255, 140, 30, 0.85)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(p1.sx, p1.sy);
+                ctx.lineTo(p2.sx, p2.sy);
+                ctx.stroke();
+            }
+        }
+    }
+}
+
+function traceFieldLine2D(startWX, startWY, direction) {
+    const points = [];
+    let wx = startWX, wy = startWY;
+    for (let i = 0; i < MAX_STEPS; i++) {
+        points.push({ wx, wy });
+        const field = computeField(wx, wy, 0);
+        const mag = Math.sqrt(field.Ex * field.Ex + field.Ey * field.Ey);
+        if (mag < 0.00001) break;
+        const step = 3 * direction;
+        const nx = field.Ex / mag, ny = field.Ey / mag;
+        wx += nx * step; wy += ny * step;
+        if (Math.abs(wx) > 450 || Math.abs(wy) > 450) break;
+        let tooClose = false;
+        for (const c of charges) {
+            const dx = wx - c.x, dy = wy - c.y;
+            if (dx * dx + dy * dy < 400) {
+                if (direction > 0 && c.q < 0 || direction < 0 && c.q > 0) {
+                    points.push({ wx, wy }); tooClose = true; break;
+                }
+                if (dx * dx + dy * dy < 100) { tooClose = true; break; }
+            }
+        }
+        if (tooClose) break;
+    }
+    return points;
+}
+
+let allFieldLinePoints2D = [];
+
+function computeFieldLinePoints2D() {
+    allFieldLinePoints2D = [];
+    const starts = [];
+    for (const c of charges) {
+        if (c.q > 0) {
+            const numLines = Math.round(18 * Math.abs(c.q));
+            for (let i = 0; i < numLines; i++) {
+                const angle = (2 * Math.PI * i) / numLines;
+                starts.push({ wx: c.x + 20 * Math.cos(angle), wy: c.y + 20 * Math.sin(angle) });
+            }
+        }
+    }
+    
+    for (const c of charges) {
+        if (c.q < 0) {
+            const numLines = Math.round(18 * Math.abs(c.q));
+            for (let i = 0; i < numLines; i++) {
+                const angle = (2 * Math.PI * i) / numLines;
+                const r = 250;
+                starts.push({ wx: c.x + r * Math.cos(angle), wy: c.y + r * Math.sin(angle) });
+            }
+        }
+    }
+    
+    for (const start of starts) {
+        const pts = traceFieldLine2D(start.wx, start.wy, 1);
+        if (pts.length > 1) {
+            allFieldLinePoints2D.push(pts);
+        }
+    }
+}
+
+function drawFieldLines2D() {
+    computeFieldLinePoints2D();
+    
+    for (const pts of allFieldLinePoints2D) {
+        const allProjected = [];
+        for (let i = 0; i < pts.length; i++) {
+            allProjected.push(worldToScreen(pts[i].wx, pts[i].wy));
+        }
+        
+        ctx.lineWidth = 3;
+        for (let i = 0; i < allProjected.length - 1; i++) {
+            const p1 = allProjected[i];
+            const p2 = allProjected[i + 1];
+            
+            const distFromCenter = Math.sqrt(pts[i].wx ** 2 + pts[i].wy ** 2);
+            const alpha = Math.min(0.95, Math.max(0.6, 0.92 - distFromCenter / 600));
+            
+            ctx.strokeStyle = `rgba(255, 220, 80, ${alpha})`;
+            ctx.beginPath();
+            ctx.moveTo(p1.sx, p1.sy);
+            ctx.lineTo(p2.sx, p2.sy);
+            ctx.stroke();
+        }
+    }
+}
+
+function drawFieldArrows2D() {
+    if (!document.getElementById('showArrows').checked) return;
+    if (allFieldLinePoints2D.length === 0) computeFieldLinePoints2D();
+    
+    for (const pts of allFieldLinePoints2D) {
+        if (pts.length < 10) continue;
+        
+        const allProjected = [];
+        for (let i = 0; i < pts.length; i++) {
+            allProjected.push(worldToScreen(pts[i].wx, pts[i].wy));
+        }
+        
+        let arrowCount = 0;
+        const MAX_ARROWS_PER_LINE = 6;
+        const step = Math.max(1, Math.floor((allProjected.length - 10) / MAX_ARROWS_PER_LINE));
+        
+        for (let i = 5; i < allProjected.length - 5 && arrowCount < MAX_ARROWS_PER_LINE; i += step) {
+            const prev = allProjected[i - 2];
+            const curr = allProjected[i];
+            const next = allProjected[i + 2];
+            
+            const dx = next.sx - prev.sx;
+            const dy = next.sy - prev.sy;
+            const len = Math.hypot(dx, dy);
+            if (len < 2) continue;
+            
+            const angle = Math.atan2(dy, dx);
+            const arrowLen = 20;
+            const arrowWidth = 12;
+            
+            ctx.save();
+            ctx.translate(curr.sx, curr.sy);
+            ctx.rotate(angle);
+            
+            ctx.shadowColor = 'rgba(255, 0, 0, 1)';
+            ctx.shadowBlur = 18;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            ctx.fillStyle = '#FF1100';
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(arrowLen, 0);
+            ctx.lineTo(-arrowLen * 0.3, -arrowWidth);
+            ctx.lineTo(-arrowLen * 0.1, -arrowWidth * 0.2);
+            ctx.lineTo(-arrowLen * 0.1, arrowWidth * 0.2);
+            ctx.lineTo(-arrowLen * 0.3, arrowWidth);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.moveTo(arrowLen * 0.5, 0);
+            ctx.lineTo(-arrowLen * 0.15, -arrowWidth * 0.35);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(-arrowLen * 0.15, arrowWidth * 0.35);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.restore();
+            arrowCount++;
+        }
+    }
+}
+
+function drawCharge2D(c) {
+    const p = worldToScreen(c.x, c.y);
+    const radius = 10 + Math.abs(c.q) * 2;
+    const isPositive = c.q > 0;
+    
+    const gradient = ctx.createRadialGradient(p.sx, p.sy, 0, p.sx, p.sy, radius * 3);
+    gradient.addColorStop(0, isPositive ? 'rgba(231, 76, 60, 0.4)' : 'rgba(52, 152, 219, 0.4)');
+    gradient.addColorStop(1, 'transparent');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(p.sx, p.sy, radius * 3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.arc(p.sx, p.sy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = isPositive ? '#e74c3c' : '#3498db';
+    ctx.fill();
+    ctx.strokeStyle = isPositive ? '#ff7b6b' : '#5dade2';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${radius}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(isPositive ? '+' : '−', p.sx, p.sy);
+}
+
+function drawMouseInfo2D() {
+    if (mouseScreen.x < 0 || mouseScreen.y < 0 || mouseScreen.x > canvas.width || mouseScreen.y > canvas.height) return;
+    
+    const world = screenToWorld(mouseScreen.x, mouseScreen.y);
+    
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(mouseScreen.x, 0); ctx.lineTo(mouseScreen.x, canvas.height);
+    ctx.moveTo(0, mouseScreen.y); ctx.lineTo(canvas.width, mouseScreen.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    const field = computeField(world.wx, world.wy, 0);
+    const mag = Math.sqrt(field.Ex * field.Ex + field.Ey * field.Ey);
+    
+    document.getElementById('coordInfo').textContent = `X: ${Math.round(world.wx)}  Y: ${Math.round(world.wy)}`;
+    document.getElementById('fieldMag').textContent = mag.toFixed(2);
+    document.getElementById('potential').textContent = field.V.toFixed(2);
+    
+    if (mag > 0.01) {
+        const arrowLen = Math.min(50, mag * 3);
+        const ax = mouseScreen.x + arrowLen * (field.Ex / mag);
+        const ay = mouseScreen.y + arrowLen * (field.Ey / mag);
+        ctx.strokeStyle = '#ff5555';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(mouseScreen.x, mouseScreen.y);
+        ctx.lineTo(ax, ay);
+        ctx.stroke();
+        const angle = Math.atan2(field.Ey, field.Ex);
+        ctx.fillStyle = '#ff5555';
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(ax - 10 * Math.cos(angle - 0.4), ay - 10 * Math.sin(angle - 0.4));
+        ctx.lineTo(ax - 10 * Math.cos(angle + 0.4), ay - 10 * Math.sin(angle + 0.4));
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+let dragging2DCharge = null;
+
+canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    
+    if (mode === 2) {
+        let foundCharge = false;
+        for (const c of charges) {
+            const p = worldToScreen(c.x, c.y);
+            const radius = 15 + Math.abs(c.q) * 2;
+            const dx = mx - p.sx, dy = my - p.sy;
+            if (dx * dx + dy * dy < radius * radius) {
+                dragging2DCharge = c;
+                foundCharge = true;
+                return;
+            }
+        }
+        if (!foundCharge) {
+            dragging = true;
+            dragButton = 2;
+        }
+    } else {
+        dragging = true;
+        dragButton = e.button;
+    }
+    lastMouse = { x: mx, y: my };
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    
+    if (mode === 2 && dragging2DCharge) {
+        const world = screenToWorld(mx, my);
+        dragging2DCharge.x = world.wx;
+        dragging2DCharge.y = world.wy;
+        needsRedraw = true;
+    } else if (mode === 3 && dragging) {
+        const dx = mx - lastMouse.x, dy = my - lastMouse.y;
+        if (dragButton === 0) {
+            rotY += dx * 0.5;
+            rotX -= dy * 0.5;
+            document.getElementById('rotX').value = rotX;
+            document.getElementById('rotY').value = rotY;
+            document.getElementById('rotXVal').textContent = `${Math.round(rotX)}°`;
+            document.getElementById('rotYVal').textContent = `${Math.round(rotY)}°`;
+        } else if (dragButton === 2) {
+            panX += dx;
+            panY += dy;
+        }
+        needsRedraw = true;
+    } else if (mode === 2 && dragging) {
+        pan2D.x += mx - lastMouse.x;
+        pan2D.y += my - lastMouse.y;
+        needsRedraw = true;
+    }
+    
+    mouseScreen = { x: mx, y: my };
+    lastMouse = { x: mx, y: my };
+});
+
+canvas.addEventListener('mouseup', () => {
+    dragging = false;
+    dragging2DCharge = null;
+});
+
+canvas.addEventListener('mouseleave', () => {
+    dragging = false;
+    dragging2DCharge = null;
+    mouseScreen = { x: -1000, y: -1000 };
+});
+
+canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (mode === 3) {
+        zoomLevel += e.deltaY > 0 ? -0.1 : 0.1;
+        zoomLevel = Math.max(0.5, Math.min(3, zoomLevel));
+        document.getElementById('zoom').value = zoomLevel;
+        document.getElementById('zoomVal').textContent = `${zoomLevel.toFixed(1)}x`;
+    }
+    needsRedraw = true;
+});
+
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+function drawAll() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (mode === 3) {
+        ctx.fillStyle = '#0d1117';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        drawGrid3D();
+        if (document.getElementById('showEquipotential').checked) drawEquipotential3D();
+        if (document.getElementById('showFieldLines').checked) drawFieldLines3D();
+        
+        const sorted = [...charges].sort((a, b) => {
+            const pa = project(a.x, a.y, a.z);
+            const pb = project(b.x, b.y, b.z);
+            return pb.z - pa.z;
+        });
+        for (const c of sorted) drawCharge3D(c);
+        if (document.getElementById('showAxes').checked) drawAxes3D();
+        if (document.getElementById('showFieldLines').checked) drawFieldArrows3D();
+    } else {
+        draw2D();
+    }
+    
+    needsRedraw = false;
+}
+
+function loadPreset(preset) {
+    charges = [];
+    chargeIdCounter = 0;
+    const cx = 0, cy = 0, cz = 0;
+    
+    switch (preset) {
+        case 'positive':
+            addCharge(cx, cy, cz, 3, true);
+            break;
+        case 'negative':
+            addCharge(cx, cy, cz, -3, true);
+            break;
+        case 'same':
+            addCharge(-80, 0, 0, 3, true);
+            addCharge(80, 0, 0, 3, true);
+            break;
+        case 'dipole':
+            addCharge(-80, 0, 0, 3, true);
+            addCharge(80, 0, 0, -3, true);
+            break;
+        case 'three':
+            addCharge(-100, 0, 0, 3, true);
+            addCharge(0, 0, 0, -3, true);
+            addCharge(100, 0, 0, 3, true);
+            break;
+    }
+    
+    updateChargeList();
+    needsRedraw = true;
+}
+
+function setChargePos(id, axis, value) {
+    const c = charges.find(ch => ch.id === id);
+    if (c) {
+        const val = parseFloat(value);
+        if (axis === 'x') c.x = val;
+        else if (axis === 'y') c.y = val;
+        else if (axis === 'z') c.z = val;
+        needsRedraw = true;
+    }
+}
+
+function updateChargeList() {
+    const container = document.getElementById('chargeList');
+    container.innerHTML = '';
+    
+    for (const c of charges) {
+        const isPositive = c.q > 0;
+        const absQ = Math.abs(c.q);
+        
+        const div = document.createElement('div');
+        div.className = 'charge-item';
+        div.innerHTML = `
+            <div class="charge-header">
+                <div class="charge-icon ${isPositive ? 'positive' : 'negative'}">${isPositive ? '+' : '−'}</div>
+                <button class="toggle-btn ${isPositive ? 'positive' : 'negative'}" onclick="toggleChargeSign(${c.id})">
+                    切换${isPositive ? '为负' : '为正'}
+                </button>
+                <button class="danger" onclick="removeCharge(${c.id})">删除</button>
+            </div>
+            <div class="slider-row">
+                <label>|Q|:</label>
+                <input type="range" min="0.1" max="10" step="0.1" value="${absQ}" oninput="setChargeQ(${c.id}, this.value)">
+                <span class="value">${absQ.toFixed(1)}</span>
+            </div>
+            <div class="slider-row">
+                <label>X:</label>
+                <input type="range" min="-300" max="300" step="5" value="${c.x}" oninput="setChargePos(${c.id}, 'x', this.value)">
+                <span class="value">${c.x.toFixed(0)}</span>
+            </div>
+            <div class="slider-row">
+                <label>Y:</label>
+                <input type="range" min="-300" max="300" step="5" value="${c.y}" oninput="setChargePos(${c.id}, 'y', this.value)">
+                <span class="value">${c.y.toFixed(0)}</span>
+            </div>
+            <div class="slider-row">
+                <label>Z:</label>
+                <input type="range" min="-300" max="300" step="5" value="${c.z}" oninput="setChargePos(${c.id}, 'z', this.value)">
+                <span class="value">${c.z.toFixed(0)}</span>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+}
+
+function addNewCharge() {
+    const x = parseInt(document.getElementById('newChargeX').value);
+    const y = parseInt(document.getElementById('newChargeY').value);
+    const z = parseInt(document.getElementById('newChargeZ').value);
+    const qMag = parseFloat(document.getElementById('newChargeQ').value);
+    const sign = document.getElementById('newChargeSign').value;
+    const q = sign === 'positive' ? qMag : -qMag;
+    addCharge(x, y, z, q);
+}
+
+function showInstructions() {
+    document.getElementById('instructionsOverlay').classList.add('active');
+}
+
+function hideInstructions(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('instructionsOverlay').classList.remove('active');
+}
+
+// Control panel event listeners
+document.getElementById('presetSelect').addEventListener('change', function() {
+    loadPreset(this.value);
+});
+
+document.getElementById('rotX').addEventListener('input', function() {
+    rotX = parseFloat(this.value);
+    document.getElementById('rotXVal').textContent = Math.round(rotX) + '°';
+    needsRedraw = true;
+});
+
+document.getElementById('rotY').addEventListener('input', function() {
+    rotY = parseFloat(this.value);
+    document.getElementById('rotYVal').textContent = Math.round(rotY) + '°';
+    needsRedraw = true;
+});
+
+document.getElementById('zoom').addEventListener('input', function() {
+    zoomLevel = parseFloat(this.value);
+    document.getElementById('zoomVal').textContent = zoomLevel.toFixed(1) + 'x';
+    needsRedraw = true;
+});
+
+document.getElementById('showFieldLines').addEventListener('change', function() { needsRedraw = true; });
+document.getElementById('showEquipotential').addEventListener('change', function() { needsRedraw = true; });
+document.getElementById('showAxes').addEventListener('change', function() { needsRedraw = true; });
+document.getElementById('showArrows').addEventListener('change', function() { needsRedraw = true; });
+
+// Animation loop
+function animLoop() {
+    if (needsRedraw) drawAll();
+    requestAnimationFrame(animLoop);
+}
+
+// Init with dipole preset
+loadPreset('dipole');
+animLoop();
+</script>
+</body>
+</html>
