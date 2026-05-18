@@ -1,0 +1,819 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>伏安法测电阻 虚拟仿真实验</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:"微软雅黑",sans-serif;}
+        body{background:#e8edf2;padding:15px;}
+        .back-btn{
+  color:var(--text2);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:6px;
+  transition:all .2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 99;
+}
+.back-btn:hover{
+  color:var(--text);
+  background:var(--bg3);
+}
+.back-btn::before{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(45deg);
+}
+        .container{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:68% 32%;gap:18px;}
+        .left-box{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,0.1);}
+        .right-box{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,0.1);height:88vh;overflow-y:auto;}
+        h2{text-align:center;color:#2c3e50;margin-bottom:12px;font-size:20px;}
+        .control-bar{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;padding:10px 14px;background:#f0f3f7;border-radius:8px;align-items:center;}
+        .ctrl-item{display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:14px;}
+        button{padding:6px 14px;border:none;border-radius:5px;cursor:pointer;background:#3498db;color:#fff;font-size:13px;transition:background .2s;}
+        button:hover{background:#2980b9;}
+        button:active{transform:scale(0.97);}
+        .btn-red{background:#e74c3c;} .btn-red:hover{background:#c0392b;}
+        .btn-green{background:#27ae60;} .btn-green:hover{background:#219a52;}
+        .btn-orange{background:#e67e22;} .btn-orange:hover{background:#d35400;}
+        input[type="range"]{width:110px;vertical-align:middle;}
+        .val-display{font-weight:bold;color:#2c3e50;min-width:32px;display:inline-block;text-align:center;}
+        #circuitCanvas{border:2px solid #555;border-radius:8px;background:#fefefe;display:block;margin:0 auto;width:100%;height:auto;}
+        .meter-wrap{display:flex;justify-content:center;gap:40px;margin:14px 0;}
+        .meter{width:180px;height:180px;border-radius:50%;border:3px solid #444;position:relative;background:linear-gradient(135deg,#fafafa,#e8e8e8);box-shadow:inset 0 0 20px rgba(0,0,0,0.08);}
+        .meter-center{width:10px;height:10px;border-radius:50%;background:#333;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;}
+        .needle{width:75px;height:2px;background:linear-gradient(90deg,#c0392b,#e74c3c);position:absolute;top:50%;left:50%;transform-origin:left center;transition:transform 0.4s cubic-bezier(.4,0,.2,1);z-index:2;border-radius:1px;}
+        .meter-label{position:absolute;bottom:22px;width:100%;text-align:center;font-weight:bold;font-size:14px;color:#333;}
+        .meter-range{position:absolute;top:8px;width:100%;text-align:center;font-size:11px;color:#888;}
+        table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;}
+        th,td{border:1px solid #ddd;padding:5px 4px;text-align:center;}
+        th{background:#3498db;color:#fff;font-size:13px;}
+        tr:nth-child(even){background:#f8f9fa;}
+        #iuCanvas{width:100%;border:1px solid #ddd;margin-top:8px;border-radius:4px;}
+        .res-result{font-size:16px;color:#e74c3c;font-weight:bold;margin:10px 0;padding:8px;background:#fef0ef;border-radius:6px;text-align:center;}
+        .tip{color:#555;margin:6px 0;font-size:13px;text-align:center;background:#f8f9fa;padding:6px;border-radius:4px;}
+        .error-analysis{margin-top:12px;padding:10px;background:#fffbe6;border:1px solid #f0e68c;border-radius:6px;font-size:13px;color:#666;line-height:1.8;}
+        .error-analysis b{color:#333;}
+    </style>
+</head>
+<body>
+    <h2>伏安法测电阻 — 虚拟仿真实验</h2>
+    <div class="container">
+      <a href="../index.html" class="back-btn">返回</a>
+        <div class="left-box">
+            <div class="control-bar">
+                <div class="ctrl-item">
+                    <span>电源电压：</span><span class="val-display" id="volVal">4.5</span><span>V</span>
+                    <input type="range" id="sourceVol" min="1" max="12" step="0.1" value="4.5">
+                </div>
+                <div class="ctrl-item">
+                    <span>滑变阻值：</span><span class="val-display" id="rabVal">10</span><span>Ω</span>
+                    <input type="range" id="slideRab" min="0" max="50" step="1" value="10">
+                </div>
+                <div class="ctrl-item">
+                    <button class="btn-orange" id="switchBtn">开关：断开</button>
+                </div>
+                <div class="ctrl-item">
+                    <button id="changeConn">外接法</button>
+                </div>
+                <div class="ctrl-item">
+                    <button class="btn-green" id="addData">记录数据</button>
+                    <button class="btn-red" id="clearData">清空</button>
+                    <button id="resetExp">重置</button>
+                </div>
+            </div>
+            <div class="tip" id="tipText">点击"开关：断开"闭合电路，调节滑动变阻器改变电流电压</div>
+            <canvas id="circuitCanvas" width="880" height="420"></canvas>
+            <div class="meter-wrap">
+                <div class="meter" id="voltMeter">
+                    <div class="meter-range">0 ~ 3V</div>
+                    <div class="meter-center"></div>
+                    <div class="needle" id="voltNeedle"></div>
+                    <div class="meter-label">电压表 V</div>
+                </div>
+                <div class="meter" id="ampMeter">
+                    <div class="meter-range">0 ~ 0.6A</div>
+                    <div class="meter-center"></div>
+                    <div class="needle" id="ampNeedle"></div>
+                    <div class="meter-label">电流表 A</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-box">
+            <h3>实验数据记录表</h3>
+            <table>
+                <thead>
+                    <tr><th>次数</th><th>电压U/V</th><th>电流I/A</th><th>电阻R/Ω</th></tr>
+                </thead>
+                <tbody id="dataTable"></tbody>
+            </table>
+            <div class="res-result">待测电阻 Rx = <span id="avgRes">--</span> Ω</div>
+            <div class="error-analysis" id="errorInfo">
+                <b>系统参数：</b><br>
+                待测电阻 Rx = 10 Ω<br>
+                电压表内阻 Rv = 3000 Ω<br>
+                电流表内阻 Ra = 0.5 Ω<br>
+                <b>误差分析：</b><br>
+                <span id="errorDetail">闭合开关后显示</span>
+            </div>
+            <h3 style="margin-top:16px;">I-U 特性曲线</h3>
+            <canvas id="iuCanvas" height="260"></canvas>
+            <div style="margin-top:12px;color:#888;font-size:12px;line-height:1.8;">
+                <p><b>实验原理：</b>R = U / I</p>
+                <p><b>外接法：</b>电压表与Rx并联，电流表测总电流（偏大）→ R<sub>测</sub> &lt; R<sub>真</sub></p>
+                <p><b>内接法：</b>电流表与Rx串联，电压表测总电压（偏大）→ R<sub>测</sub> &gt; R<sub>真</sub></p>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ==================== 全局物理参数 ====================
+let sourceVolt = 4.5;       // 电源电压
+let slideR = 10;             // 滑动变阻器接入阻值
+const Rx = 10;               // 待测电阻
+const Rv = 3000;             // 电压表内阻
+const Ra = 0.5;              // 电流表内阻
+let connType = 0;            // 0=外接 1=内接
+let switchOn = false;        // 开关状态
+let dataList = [];
+let nowU = 0, nowI = 0;     // 电表读数
+let animFrame = null;
+let flowOffset = 0;          // 电流流动动画偏移
+
+const voltNeedle = document.getElementById('voltNeedle');
+const ampNeedle = document.getElementById('ampNeedle');
+const circuitCanvas = document.getElementById('circuitCanvas');
+const circuitCtx = circuitCanvas.getContext('2d');
+const iuCanvas = document.getElementById('iuCanvas');
+const iuCtx = iuCanvas.getContext('2d');
+
+// ==================== 初始化 ====================
+window.onload = function(){
+    // 设置iuCanvas实际像素尺寸
+    iuCanvas.width = iuCanvas.offsetWidth * 2;
+    iuCanvas.height = 520;
+
+    document.getElementById('sourceVol').addEventListener('input', e => {
+        sourceVolt = parseFloat(e.target.value);
+        document.getElementById('volVal').innerText = sourceVolt.toFixed(1);
+        update();
+    });
+    document.getElementById('slideRab').addEventListener('input', e => {
+        slideR = parseInt(e.target.value);
+        document.getElementById('rabVal').innerText = slideR;
+        update();
+    });
+    document.getElementById('switchBtn').addEventListener('click', () => {
+        switchOn = !switchOn;
+        document.getElementById('switchBtn').innerText = switchOn ? "开关：闭合" : "开关：断开";
+        document.getElementById('switchBtn').style.background = switchOn ? "#27ae60" : "#e67e22";
+        update();
+    });
+    document.getElementById('changeConn').addEventListener('click', () => {
+        connType = 1 - connType;
+        document.getElementById('changeConn').innerText = connType ? "内接法" : "外接法";
+        update();
+    });
+    document.getElementById('addData').addEventListener('click', addCurrentData);
+    document.getElementById('clearData').addEventListener('click', clearAllData);
+    document.getElementById('resetExp').addEventListener('click', resetExperiment);
+
+    update();
+    startAnimation();
+};
+
+function update() {
+    calcElecData();
+    drawCircuit();
+    drawMeterScale();
+    setMeterAngle(nowU, nowI);
+    updateErrorInfo();
+}
+
+// ==================== 真实物理误差模型 ====================
+function calcElecData() {
+    if (!switchOn) { nowU = 0; nowI = 0; return; }
+
+    if (connType === 0) {
+        // 外接法：电压表与Rx并联，再与电流表、滑变串联
+        // 并联等效电阻：R_par = Rx * Rv / (Rx + Rv)
+        let Rpar = Rx * Rv / (Rx + Rv);
+        let totalR = slideR + Ra + Rpar;
+        let I_total = sourceVolt / totalR;       // 电流表读数（总电流）
+        let U_par = I_total * Rpar;              // 电压表读数（并联部分电压）
+        nowI = I_total;
+        nowU = U_par;
+    } else {
+        // 内接法：电流表与Rx串联，电压表测两者总电压
+        let R_series = Ra + Rx;
+        let totalR = slideR + (R_series * Rv) / (R_series + Rv);
+        let I_main = sourceVolt / totalR;
+        let I_Rx = I_main;                       // 电流表读数（=流过Rx的电流）
+        let U_total = I_main * R_series;          // 电压表读数（Ra+Rx总电压）
+        nowI = I_Rx;
+        nowU = U_total;
+    }
+
+    // 限制在电表量程内
+    nowU = Math.min(nowU, 3.0);
+    nowI = Math.min(nowI, 0.6);
+}
+
+// ==================== 电表刻度绘制 ====================
+function drawMeterScale() {
+    drawOneMeterScale('voltMeter', 3.0, 'V', 0.3);
+    drawOneMeterScale('ampMeter', 0.6, 'A', 0.1);
+}
+
+function drawOneMeterScale(meterId, maxVal, unit, step) {
+    const meter = document.getElementById(meterId);
+    // 移除旧刻度
+    meter.querySelectorAll('.scale-mark').forEach(e => e.remove());
+
+    const cx = 90, cy = 90, r = 72;
+    const startAngle = -120, endAngle = 120; // 度
+    const totalDeg = endAngle - startAngle;
+    const steps = Math.round(maxVal / step);
+
+    for (let i = 0; i <= steps; i++) {
+        const angle = startAngle + (i / steps) * totalDeg;
+        const rad = angle * Math.PI / 180;
+        const isMajor = (i % (steps <= 6 ? 1 : 2) === 0);
+        const innerR = isMajor ? r - 12 : r - 7;
+        const outerR = r;
+
+        const x1 = cx + innerR * Math.cos(rad);
+        const y1 = cy + innerR * Math.sin(rad);
+        const x2 = cx + outerR * Math.cos(rad);
+        const y2 = cy + outerR * Math.sin(rad);
+
+        const mark = document.createElement('div');
+        mark.className = 'scale-mark';
+        mark.style.cssText = `position:absolute;left:${x1}px;top:${y1}px;width:${Math.sqrt((x2-x1)**2+(y2-y1)**2)}px;height:${isMajor?2:1}px;background:#333;transform-origin:0 50%;transform:rotate(${angle}deg);`;
+        meter.appendChild(mark);
+
+        if (isMajor) {
+            const label = document.createElement('div');
+            const val = (i * step).toFixed(step < 1 ? 1 : 0);
+            const lx = cx + (r - 22) * Math.cos(rad) - 8;
+            const ly = cy + (r - 22) * Math.sin(rad) - 7;
+            label.style.cssText = `position:absolute;left:${lx}px;top:${ly}px;font-size:10px;color:#555;`;
+            label.textContent = val;
+            meter.appendChild(label);
+        }
+    }
+}
+
+function setMeterAngle(u, i) {
+    // 电压表：0~3V 对应 -60°~+60°
+    const vAngle = (u / 3.0) * 120 - 60;
+    voltNeedle.style.transform = `rotate(${vAngle}deg)`;
+    // 电流表：0~0.6A 对应 -60°~+60°
+    const aAngle = (i / 0.6) * 120 - 60;
+    ampNeedle.style.transform = `rotate(${aAngle}deg)`;
+}
+
+// ==================== 电流流动动画 ====================
+function startAnimation() {
+    function animate() {
+        if (switchOn && (nowI > 0.001)) {
+            flowOffset += 1.5;
+            if (flowOffset > 20) flowOffset = 0;
+        }
+        drawCircuit();
+        animFrame = requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// ==================== 核心电路图绘制 ====================
+function drawCircuit() {
+    const ctx = circuitCtx;
+    const W = 880, H = 420;
+    ctx.clearRect(0, 0, W, H);
+
+    // 布局关键坐标
+    const L = 80, R = 800, T = 80, B = 340;
+    const midY = (T + B) / 2; // 210
+    const powerX = 120, switchX = 230, slideX = 380;
+    const rxX = 560, ampX = 680;
+    const voltY = 360; // 电压表位置（在画布内）
+
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "#333";
+    ctx.fillStyle = "#333";
+    ctx.font = "bold 14px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // ---- 主回路导线 ----
+    ctx.beginPath();
+    // 上横线：电源正极 → 开关 → 滑变
+    ctx.moveTo(powerX, T);
+    ctx.lineTo(switchX - 20, T);
+    ctx.stroke();
+
+    // 开关
+    drawSwitch(ctx, switchX, T, switchOn);
+
+    ctx.beginPath();
+    ctx.moveTo(switchX + 20, T);
+    ctx.lineTo(slideX - 50, T);
+    ctx.stroke();
+
+    // 滑动变阻器
+    drawSlideRheostat(ctx, slideX, T, slideR);
+
+    ctx.beginPath();
+    ctx.moveTo(slideX + 50, T);
+    ctx.lineTo(rxX - 30, T);
+    ctx.stroke();
+
+    // 待测电阻 Rx
+    drawResistor(ctx, rxX, T, "Rx");
+
+    ctx.beginPath();
+    ctx.moveTo(rxX + 30, T);
+    ctx.lineTo(ampX - 25, T);
+    ctx.stroke();
+
+    // 电流表 A
+    drawAmmeter(ctx, ampX, T);
+
+    ctx.beginPath();
+    ctx.moveTo(ampX + 25, T);
+    ctx.lineTo(R, T);
+    // 右竖线
+    ctx.lineTo(R, B);
+    // 下横线
+    ctx.lineTo(powerX, B);
+    ctx.stroke();
+
+    // 电源
+    drawBattery(ctx, powerX, midY);
+
+    // 左竖线（电源正极到上横线，电源负极到下横线）
+    ctx.beginPath();
+    ctx.moveTo(powerX, T);
+    ctx.lineTo(powerX, midY - 35);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(powerX, midY + 35);
+    ctx.lineTo(powerX, B);
+    ctx.stroke();
+
+    // ---- 电压表并联线路 ----
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#e74c3c";
+
+    if (connType === 0) {
+        // 外接法：电压表并联在Rx两端
+        ctx.beginPath();
+        ctx.moveTo(rxX - 30, T);
+        ctx.lineTo(rxX - 30, voltY);
+        ctx.lineTo(voltX_pos(rxX, ampX, 0) - 20, voltY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(rxX + 30, T);
+        ctx.lineTo(rxX + 30, voltY);
+        ctx.lineTo(voltX_pos(rxX, ampX, 0) + 20, voltY);
+        ctx.stroke();
+        drawVoltmeter(ctx, voltX_pos(rxX, ampX, 0), voltY);
+    } else {
+        // 内接法：电压表并联在Rx+电流表两端
+        ctx.beginPath();
+        ctx.moveTo(rxX - 30, T);
+        ctx.lineTo(rxX - 30, voltY);
+        ctx.lineTo(voltX_pos(rxX, ampX, 1) - 20, voltY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(ampX + 25, T);
+        ctx.lineTo(ampX + 25, voltY);
+        ctx.lineTo(voltX_pos(rxX, ampX, 1) + 20, voltY);
+        ctx.stroke();
+        drawVoltmeter(ctx, voltX_pos(rxX, ampX, 1), voltY);
+    }
+
+    // ---- 电流流动动画（黄色小点）----
+    if (switchOn && nowI > 0.001) {
+        drawCurrentFlow(ctx, powerX, switchX, slideX, rxX, ampX, R, T, B, midY);
+    }
+
+    // ---- 标注电流方向箭头 ----
+    if (switchOn) {
+        ctx.fillStyle = "#2980b9";
+        ctx.font = "bold 13px Arial";
+        drawArrow(ctx, 170, T - 15, 'right', "I");
+        drawArrow(ctx, 460, T - 15, 'right', "I");
+    }
+
+    // ---- 正负极标注 ----
+    ctx.fillStyle = "#e74c3c";
+    ctx.font = "bold 16px Arial";
+    ctx.fillText("+", powerX + 18, midY - 35);
+    ctx.fillStyle = "#2980b9";
+    ctx.fillText("−", powerX + 18, midY + 40);
+}
+
+function voltX_pos(rxX, ampX, type) {
+    return type === 0 ? rxX : (rxX + ampX) / 2;
+}
+
+// ---- 绘制电池符号 ----
+function drawBattery(ctx, x, y) {
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 2.5;
+    // 长线（正极）
+    ctx.beginPath();
+    ctx.moveTo(x - 12, y - 18);
+    ctx.lineTo(x + 12, y - 18);
+    ctx.stroke();
+    // 短线（负极）
+    ctx.beginPath();
+    ctx.moveTo(x - 7, y - 10);
+    ctx.lineTo(x + 7, y - 10);
+    ctx.stroke();
+    // 长线
+    ctx.beginPath();
+    ctx.moveTo(x - 12, y - 2);
+    ctx.lineTo(x + 12, y - 2);
+    ctx.stroke();
+    // 短线
+    ctx.beginPath();
+    ctx.moveTo(x - 7, y + 6);
+    ctx.lineTo(x + 7, y + 6);
+    ctx.stroke();
+    // 标注
+    ctx.fillStyle = "#333";
+    ctx.font = "bold 13px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("E", x - 25, y - 5);
+    ctx.font = "11px Arial";
+    ctx.fillText(sourceVolt.toFixed(1) + "V", x - 30, y + 12);
+}
+
+// ---- 绘制开关 ----
+function drawSwitch(ctx, x, y, on) {
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 2.5;
+    // 两个端点
+    ctx.beginPath();
+    ctx.arc(x - 20, y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + 20, y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // 开关臂
+    ctx.beginPath();
+    ctx.moveTo(x - 20, y);
+    if (on) {
+        ctx.lineTo(x + 20, y);
+    } else {
+        ctx.lineTo(x + 10, y - 25);
+    }
+    ctx.stroke();
+    ctx.fillStyle = "#333";
+    ctx.font = "bold 13px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("S", x, y + 18);
+}
+
+// ---- 绘制滑动变阻器 ----
+function drawSlideRheostat(ctx, x, y, val) {
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 2.5;
+    // 矩形框
+    ctx.strokeRect(x - 50, y - 12, 100, 24);
+    // 锯齿电阻线
+    ctx.beginPath();
+    const zigN = 8;
+    const zigW = 80 / zigN;
+    const zigH = 10;
+    ctx.moveTo(x - 40, y);
+    for (let i = 0; i < zigN; i++) {
+        ctx.lineTo(x - 40 + i * zigW + zigW / 2, y - zigH);
+        ctx.lineTo(x - 40 + (i + 1) * zigW, y);
+    }
+    ctx.stroke();
+    // 滑块箭头
+    const sliderPos = x - 40 + (val / 50) * 80;
+    ctx.fillStyle = "#e74c3c";
+    ctx.beginPath();
+    ctx.moveTo(sliderPos, y + 14);
+    ctx.lineTo(sliderPos - 5, y + 24);
+    ctx.lineTo(sliderPos + 5, y + 24);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillRect(sliderPos - 1, y + 12, 2, 14);
+    // 标注
+    ctx.fillStyle = "#333";
+    ctx.font = "bold 13px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("R", x, y - 22);
+    ctx.font = "11px Arial";
+    ctx.fillText(val + "Ω", x, y + 38);
+}
+
+// ---- 绘制电阻（锯齿形） ----
+function drawResistor(ctx, x, y, label) {
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 2.5;
+    const len = 50;
+    const zigN = 6;
+    const zigW = len / zigN;
+    const zigH = 10;
+    ctx.beginPath();
+    ctx.moveTo(x - len / 2, y);
+    for (let i = 0; i < zigN; i++) {
+        ctx.lineTo(x - len / 2 + i * zigW + zigW / 2, y - zigH);
+        ctx.lineTo(x - len / 2 + (i + 1) * zigW, y);
+    }
+    ctx.stroke();
+    ctx.fillStyle = "#333";
+    ctx.font = "bold 14px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(label, x, y - 20);
+}
+
+// ---- 绘制电流表 ----
+function drawAmmeter(ctx, x, y) {
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(x, y, 22, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#333";
+    ctx.font = "bold 18px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("A", x, y);
+    ctx.textBaseline = "alphabetic";
+}
+
+// ---- 绘制电压表 ----
+function drawVoltmeter(ctx, x, y) {
+    ctx.strokeStyle = "#e74c3c";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(x, y, 22, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#e74c3c";
+    ctx.font = "bold 18px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("V", x, y);
+    ctx.textBaseline = "alphabetic";
+}
+
+// ---- 电流流动动画点 ----
+function drawCurrentFlow(ctx, powerX, switchX, slideX, rxX, ampX, R, T, B, midY) {
+    ctx.fillStyle = "rgba(52,152,219,0.7)";
+    const dotR = 3;
+    const path = [];
+    // 上横线（正极→右）
+    for (let x = powerX; x <= R; x += 20) path.push([x, T]);
+    // 右竖线
+    for (let y = T; y <= B; y += 20) path.push([R, y]);
+    // 下横线（右→左）
+    for (let x = R; x >= powerX; x -= 20) path.push([x, B]);
+    // 左竖线（下→上）
+    for (let y = B; y >= midY + 35; y -= 20) path.push([powerX, y]);
+
+    const totalLen = path.length;
+    const offset = Math.floor(flowOffset) % totalLen;
+    for (let i = 0; i < 3; i++) {
+        const idx = (offset + i * Math.floor(totalLen / 3)) % totalLen;
+        if (idx < path.length) {
+            ctx.beginPath();
+            ctx.arc(path[idx][0], path[idx][1], dotR, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
+// ---- 方向箭头 ----
+function drawArrow(ctx, x, y, dir, label) {
+    ctx.save();
+    ctx.fillStyle = "#2980b9";
+    if (dir === 'right') {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 12, y - 5);
+        ctx.lineTo(x + 12, y + 5);
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ==================== 数据记录 ====================
+function addCurrentData() {
+    if (!switchOn) {
+        document.getElementById('tipText').textContent = "⚠ 请先闭合开关！";
+        document.getElementById('tipText').style.color = "#e74c3c";
+        setTimeout(() => {
+            document.getElementById('tipText').textContent = '点击"开关：断开"闭合电路，调节滑动变阻器改变电流电压';
+            document.getElementById('tipText').style.color = "#555";
+        }, 2000);
+        return;
+    }
+    if (nowI < 0.001) {
+        document.getElementById('tipText').textContent = "⚠ 电流过小，请调节滑动变阻器！";
+        document.getElementById('tipText').style.color = "#e74c3c";
+        setTimeout(() => {
+            document.getElementById('tipText').textContent = '点击"开关：断开"闭合电路，调节滑动变阻器改变电流电压';
+            document.getElementById('tipText').style.color = "#555";
+        }, 2000);
+        return;
+    }
+    let r = parseFloat((nowU / nowI).toFixed(2));
+    dataList.push({ u: nowU.toFixed(2), i: nowI.toFixed(3), r: r });
+    renderTable();
+    drawIULine();
+    calcAvgRes();
+}
+
+function renderTable() {
+    const tb = document.getElementById('dataTable');
+    tb.innerHTML = "";
+    dataList.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${idx + 1}</td><td>${item.u}</td><td>${item.i}</td><td>${item.r}</td>`;
+        tb.appendChild(tr);
+    });
+}
+
+function calcAvgRes() {
+    if (dataList.length === 0) return;
+    const sum = dataList.reduce((s, d) => s + d.r, 0);
+    document.getElementById('avgRes').innerText = (sum / dataList.length).toFixed(2);
+}
+
+function clearAllData() {
+    dataList = [];
+    renderTable();
+    drawIULine();
+    document.getElementById('avgRes').innerText = "--";
+}
+
+function resetExperiment() {
+    sourceVolt = 4.5; slideR = 10; connType = 0; switchOn = false;
+    document.getElementById('sourceVol').value = 4.5;
+    document.getElementById('volVal').innerText = "4.5";
+    document.getElementById('slideRab').value = 10;
+    document.getElementById('rabVal').innerText = "10";
+    document.getElementById('changeConn').innerText = "外接法";
+    document.getElementById('switchBtn').innerText = "开关：断开";
+    document.getElementById('switchBtn').style.background = "#e67e22";
+    clearAllData();
+    update();
+}
+
+// ==================== 误差分析 ====================
+function updateErrorInfo() {
+    const el = document.getElementById('errorDetail');
+    if (!switchOn) { el.textContent = "闭合开关后显示"; return; }
+    if (connType === 0) {
+        const Rpar = Rx * Rv / (Rx + Rv);
+        const Rmeasured = nowU / nowI;
+        const relError = ((Rmeasured - Rx) / Rx * 100).toFixed(2);
+        el.innerHTML = `外接法：R<sub>测</sub> = U/I = ${Rmeasured.toFixed(2)} Ω<br>` +
+            `R<sub>真</sub> = ${Rx} Ω，相对误差 = ${relError}%<br>` +
+            `原因：电压表分流，电流表读数偏大`;
+    } else {
+        const Rmeasured = nowU / nowI;
+        const relError = ((Rmeasured - Rx) / Rx * 100).toFixed(2);
+        el.innerHTML = `内接法：R<sub>测</sub> = U/I = ${Rmeasured.toFixed(2)} Ω<br>` +
+            `R<sub>真</sub> = ${Rx} Ω，相对误差 = ${relError}%<br>` +
+            `原因：电流表分压，电压表读数偏大`;
+    }
+}
+
+// ==================== I-U 特性曲线 ====================
+function drawIULine() {
+    const ctx = iuCtx;
+    const W = iuCanvas.width, H = iuCanvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const pad = { l: 70, r: 30, t: 30, b: 50 };
+    const gW = W - pad.l - pad.r;
+    const gH = H - pad.t - pad.b;
+
+    // 确定坐标范围
+    let maxU = 3, maxI = 0.6;
+    if (dataList.length > 0) {
+        maxU = Math.max(3, ...dataList.map(d => parseFloat(d.u))) * 1.15;
+        maxI = Math.max(0.6, ...dataList.map(d => parseFloat(d.i))) * 1.15;
+    }
+
+    // 网格线
+    ctx.strokeStyle = "#e0e0e0";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 6; i++) {
+        const x = pad.l + (i / 6) * gW;
+        ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + gH); ctx.stroke();
+    }
+    for (let i = 0; i <= 6; i++) {
+        const y = pad.t + (i / 6) * gH;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + gW, y); ctx.stroke();
+    }
+
+    // 坐标轴
+    ctx.strokeStyle = "#555";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, pad.t);
+    ctx.lineTo(pad.l, pad.t + gH);
+    ctx.lineTo(pad.l + gW, pad.t + gH);
+    ctx.stroke();
+
+    // 坐标轴标注
+    ctx.fillStyle = "#333";
+    ctx.font = "bold 22px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("U / V", pad.l + gW / 2, H - 8);
+    ctx.save();
+    ctx.translate(18, pad.t + gH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("I / A", 0, 0);
+    ctx.restore();
+
+    // 刻度值
+    ctx.font = "18px Arial";
+    ctx.fillStyle = "#666";
+    ctx.textAlign = "center";
+    for (let i = 0; i <= 6; i++) {
+        const val = (maxU * i / 6).toFixed(1);
+        const x = pad.l + (i / 6) * gW;
+        ctx.fillText(val, x, pad.t + gH + 28);
+    }
+    ctx.textAlign = "right";
+    for (let i = 0; i <= 6; i++) {
+        const val = (maxI * i / 6).toFixed(2);
+        const y = pad.t + gH - (i / 6) * gH;
+        ctx.fillText(val, pad.l - 8, y + 6);
+    }
+
+    if (dataList.length < 1) return;
+
+    // 数据点
+    ctx.fillStyle = "#e74c3c";
+    dataList.forEach(d => {
+        const x = pad.l + (parseFloat(d.u) / maxU) * gW;
+        const y = pad.t + gH - (parseFloat(d.i) / maxI) * gH;
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#c0392b";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    });
+
+    // 线性拟合（最小二乘法）
+    if (dataList.length >= 2) {
+        let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, n = dataList.length;
+        dataList.forEach(d => {
+            const x = parseFloat(d.u), y = parseFloat(d.i);
+            sumX += x; sumY += y; sumXY += x * y; sumX2 += x * x;
+        });
+        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+
+        // 画拟合直线
+        ctx.strokeStyle = "#3498db";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 4]);
+        ctx.beginPath();
+        const x0 = 0, y0 = slope * x0 + intercept;
+        const x1 = maxU, y1 = slope * x1 + intercept;
+        ctx.moveTo(pad.l + (x0 / maxU) * gW, pad.t + gH - (y0 / maxI) * gH);
+        ctx.lineTo(pad.l + (x1 / maxU) * gW, pad.t + gH - (y1 / maxI) * gH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 斜率标注（斜率 = 1/R）
+        if (Math.abs(slope) > 0.0001) {
+            const fitR = (1 / slope).toFixed(2);
+            ctx.fillStyle = "#3498db";
+            ctx.font = "bold 20px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText(`拟合 R = ${fitR} Ω`, pad.l + 20, pad.t + 30);
+        }
+    }
+}
+</script>
+</body>
+</html>
