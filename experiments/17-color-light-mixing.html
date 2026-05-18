@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>色光混合教学实验室</title>
+<style>
+/* ============ Reset & Base ============ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI','Noto Sans SC','Microsoft YaHei',system-ui,sans-serif;background:#0F1117;color:#F0F2F5;-webkit-font-smoothing:antialiased;overflow-x:hidden;line-height:1.6}
+.back-btn{
+  color:var(--text2);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:6px;
+  transition:all .2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 99;
+}
+.back-btn:hover{
+  color:var(--text);
+  background:var(--bg3);
+}
+.back-btn::before{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(45deg);
+}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;font-family:inherit;border:none;background:none;color:inherit}
+input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:#2A2F3D;outline:none}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.3);transition:transform .15s}
+input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+input[type="range"]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;cursor:pointer;border:none;box-shadow:0 2px 6px rgba(0,0,0,0.3)}
+
+/* ============ Scrollbar ============ */
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:#0F1117}
+::-webkit-scrollbar-thumb{background:#2A2F3D;border-radius:4px}
+
+/* ============ Navbar ============ */
+.navbar{position:fixed;top:0;left:0;right:0;z-index:100;height:64px;display:flex;align-items:center;justify-content:center;transition:all .3s;border-bottom:1px solid transparent}
+.navbar.scrolled{background:rgba(15,17,23,.9);backdrop-filter:blur(12px);border-bottom-color:#2A2F3D}
+.navbar-inner{max-width:1200px;width:100%;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;color:#F0F2F5;letter-spacing:-.5px}
+.nav-logo-circle{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#FF1A1A,#00FF41,#1A6DFF);display:flex;align-items:center;justify-content:center;position:relative}
+.nav-logo-circle svg{width:16px;height:16px;color:#fff}
+.nav-links{display:flex;gap:4px}
+.nav-link{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;color:#8B93A7;transition:all .2s;cursor:pointer;border:none;background:none}
+.nav-link:hover{color:#F0F2F5;background:#1A1D26}
+.nav-link.active{color:#4F6EF7;background:rgba(79,110,247,.1)}
+.nav-mobile-btn{display:none;padding:8px;color:#8B93A7;background:none;border:none}
+.nav-mobile-menu{display:none;position:absolute;top:64px;left:0;right:0;background:rgba(15,17,23,.95);backdrop-filter:blur(12px);border-bottom:1px solid #2A2F3D;padding:12px 16px;flex-direction:column;gap:4px}
+.nav-mobile-menu.show{display:flex}
+
+/* ============ Page System ============ */
+.page{display:none;min-height:100vh;padding-top:64px}
+.page.active{display:block}
+
+/* ============ Hero Section ============ */
+.hero{position:relative;min-height:calc(100vh - 64px);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.hero-canvas{position:absolute;inset:0;width:100%;height:100%}
+.hero-content{position:relative;z-index:2;text-align:center;max-width:700px;padding:0 24px}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:9999px;background:#1A1D26;border:1px solid #2A2F3D;font-size:13px;color:#8B93A7;margin-bottom:24px}
+.hero-badge svg{width:14px;height:14px;color:#4F6EF7}
+.hero-title{font-size:52px;font-weight:800;line-height:1.15;margin-bottom:20px;letter-spacing:-1px}
+.hero-title .gradient{background:linear-gradient(90deg,#FF1A1A,#00FF41,#1A6DFF);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-subtitle{font-size:18px;color:#8B93A7;margin-bottom:40px;line-height:1.7}
+.hero-buttons{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:#4F6EF7;color:#fff;border-radius:12px;font-size:15px;font-weight:600;transition:all .2s}
+.btn-primary:hover{background:#6B84FF;transform:translateY(-2px);box-shadow:0 8px 24px rgba(79,110,247,.25)}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;background:transparent;border:1px solid #2A2F3D;color:#8B93A7;border-radius:12px;font-size:15px;font-weight:500;transition:all .2s}
+.btn-secondary:hover{border-color:rgba(79,110,247,.4);color:#F0F2F5}
+.hero-scroll{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;color:#8B93A7;font-size:12px}
+.hero-scroll-ring{width:24px;height:36px;border-radius:9999px;border:2px solid #2A2F3D;display:flex;justify-content:center;padding-top:6px}
+.hero-scroll-dot{width:6px;height:8px;border-radius:9999px;background:#4F6EF7;animation:scrollBounce 2s infinite}
+@keyframes scrollBounce{0%,100%{transform:translateY(0);opacity:1}50%{transform:translateY(8px);opacity:.5}}
+
+/* ============ Section Styles ============ */
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.section-header svg{width:24px;height:24px;color:#4F6EF7}
+.section-title{font-size:28px;font-weight:700}
+.section-desc{color:#8B93A7;margin-bottom:32px;max-width:640px}
+.section{padding:80px 0}
+
+.card{background:#1A1D26;border:1px solid #2A2F3D;border-radius:16px;padding:28px;transition:all .2s}
+.card-grid{display:grid;gap:20px}
+
+/* ============ Primary Colors ============ */
+.pcolor-card{text-align:center;padding:32px 24px}
+.pcolor-circle{width:100px;height:100px;border-radius:50%;margin:0 auto 20px;position:relative;transition:transform .3s}
+.pcolor-circle:hover{transform:scale(1.08)}
+.pcolor-circle .inner{position:absolute;inset:0;border-radius:50%}
+.pcolor-circle .light{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.4) 0%,rgba(255,255,255,.1) 20%,transparent 50%)}
+.pcolor-name{font-size:20px;font-weight:700;margin-bottom:4px}
+.pcolor-en{font-size:13px;color:#8B93A7;margin-bottom:12px}
+.pcolor-wave{display:inline-block;padding:4px 14px;border-radius:9999px;font-size:12px;font-family:monospace;margin-bottom:12px}
+.pcolor-desc{font-size:14px;color:#8B93A7;line-height:1.6}
+
+/* Red */
+.pcolor-red .pcolor-circle .inner{background:#FF1A1A;box-shadow:0 0 20px rgba(255,26,26,.5),0 0 60px rgba(255,26,26,.3),0 0 100px rgba(255,26,26,.15),inset 0 0 20px rgba(255,26,26,.2)}
+.pcolor-red .pcolor-wave{background:rgba(255,26,26,.1);color:#FF1A1A}
+/* Green */
+.pcolor-green .pcolor-circle .inner{background:#00FF41;box-shadow:0 0 20px rgba(0,255,65,.5),0 0 60px rgba(0,255,65,.3),0 0 100px rgba(0,255,65,.15),inset 0 0 20px rgba(0,255,65,.2)}
+.pcolor-green .pcolor-wave{background:rgba(0,255,65,.1);color:#00FF41}
+/* Blue */
+.pcolor-blue .pcolor-circle .inner{background:#1A6DFF;box-shadow:0 0 20px rgba(26,109,255,.5),0 0 60px rgba(26,109,255,.3),0 0 100px rgba(26,109,255,.15),inset 0 0 20px rgba(26,109,255,.2)}
+.pcolor-blue .pcolor-wave{background:rgba(26,109,255,.1);color:#1A6DFF}
+
+/* ============ Mix Grid ============ */
+.mix-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.mix-item{background:#1A1D26;border:1px solid #2A2F3D;border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;transition:all .2s}
+.mix-item:hover{border-color:rgba(79,110,247,.3)}
+.mix-circle{width:56px;height:56px;border-radius:50%;margin-bottom:10px;flex-shrink:0}
+.mix-name{font-size:13px;font-weight:600;margin-bottom:4px}
+.mix-desc{font-size:11px;color:#8B93A7}
+
+/* ============ Formula ============ */
+.formula-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+.formula-item{background:#0F1117;border-radius:10px;padding:16px;text-align:center}
+.formula-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px}
+.formula-dot{width:16px;height:16px;border-radius:50%}
+.formula-result{font-family:monospace;font-size:14px;color:#F0F2F5}
+.formula-result span{font-weight:700}
+.formula-full{background:#0F1117;border-radius:10px;padding:16px;text-align:center}
+
+/* ============ Applications ============ */
+.app-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.app-item{background:#1A1D26;border:1px solid #2A2F3D;border-radius:12px;padding:20px;transition:all .2s}
+.app-item:hover{border-color:rgba(79,110,247,.3)}
+.app-icon{width:40px;height:40px;border-radius:8px;background:rgba(79,110,247,.1);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.app-icon svg{width:20px;height:20px;color:#4F6EF7}
+.app-title{font-size:15px;font-weight:600;margin-bottom:6px}
+.app-desc{font-size:13px;color:#8B93A7;line-height:1.6}
+
+/* ============ CTA Section ============ */
+.cta-box{background:linear-gradient(135deg,#1A1D26,#222633);border:1px solid #2A2F3D;border-radius:20px;padding:48px;text-align:center}
+.cta-title{font-size:28px;font-weight:700;margin-bottom:12px}
+.cta-desc{color:#8B93A7;margin-bottom:28px;max-width:520px;margin-left:auto;margin-right:auto}
+
+/* ============ Footer ============ */
+.footer{border-top:1px solid #2A2F3D;padding:24px 0;text-align:center;color:#8B93A7;font-size:13px;margin-top:40px}
+
+/* ============ Experiment Page ============ */
+.exp-header{display:flex;flex-direction:column;gap:12px;margin-bottom:24px}
+.exp-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.exp-title-row{display:flex;align-items:center;gap:12px}
+.exp-title-row svg{width:24px;height:24px;color:#4F6EF7}
+.exp-title{font-size:28px;font-weight:700}
+.exp-subtitle{color:#8B93A7;font-size:14px}
+
+/* Canvas */
+.canvas-wrap{position:relative;border:1px solid #2A2F3D;border-radius:16px;overflow:hidden;background:#08090D;min-height:450px;cursor:crosshair;user-select:none;-webkit-user-select:none;touch-action:none}
+.canvas-grid{position:absolute;inset:0;opacity:.1;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.canvas-cross{position:absolute;top:50%;left:50%;width:16px;height:16px;transform:translate(-50%,-50%);opacity:.2;pointer-events:none}
+.canvas-cross::before,.canvas-cross::after{content:'';position:absolute;background:#fff}
+.canvas-cross::before{top:50%;left:0;right:0;height:1px;transform:translateY(-50%)}
+.canvas-cross::after{left:50%;top:0;bottom:0;width:1px;transform:translateX(-50%)}
+.light-block{position:absolute;border-radius:50%;cursor:grab;transition:box-shadow .2s;display:flex;align-items:center;justify-content:center;mix-blend-mode:screen;touch-action:none}
+.light-block:active{cursor:grabbing}
+.light-block.dragging{z-index:10!important}
+.light-block .light-overlay{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.4) 0%,rgba(255,255,255,.1) 20%,transparent 50%);pointer-events:none}
+.light-block .block-label{position:relative;z-index:2;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.8);pointer-events:none;user-select:none}
+
+/* Light block glows */
+.lb-red{box-shadow:0 0 20px rgba(255,26,26,.5),0 0 60px rgba(255,26,26,.3),0 0 100px rgba(255,26,26,.15),inset 0 0 20px rgba(255,26,26,.2)}
+.lb-red.dragging{box-shadow:0 0 30px rgba(255,26,26,.7),0 0 80px rgba(255,26,26,.5),0 0 140px rgba(255,26,26,.3),inset 0 0 30px rgba(255,26,26,.3)}
+.lb-green{box-shadow:0 0 20px rgba(0,255,65,.5),0 0 60px rgba(0,255,65,.3),0 0 100px rgba(0,255,65,.15),inset 0 0 20px rgba(0,255,65,.2)}
+.lb-green.dragging{box-shadow:0 0 30px rgba(0,255,65,.7),0 0 80px rgba(0,255,65,.5),0 0 140px rgba(0,255,65,.3),inset 0 0 30px rgba(0,255,65,.3)}
+.lb-blue{box-shadow:0 0 20px rgba(26,109,255,.5),0 0 60px rgba(26,109,255,.3),0 0 100px rgba(26,109,255,.15),inset 0 0 20px rgba(26,109,255,.2)}
+.lb-blue.dragging{box-shadow:0 0 30px rgba(26,109,255,.7),0 0 80px rgba(26,109,255,.5),0 0 140px rgba(26,109,255,.3),inset 0 0 30px rgba(26,109,255,.3)}
+
+/* Guide tooltip */
+.canvas-guide{position:absolute;top:16px;left:16px;z-index:20;max-width:260px}
+.guide-box{background:rgba(26,29,38,.92);backdrop-filter:blur(8px);border:1px solid #2A2F3D;border-radius:12px;padding:16px}
+.guide-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.guide-title-row{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#F0F2F5}
+.guide-title-row svg{width:14px;height:14px;color:#4F6EF7}
+.guide-close{padding:2px;color:#8B93A7;background:none;border:none;cursor:pointer}
+.guide-close:hover{color:#F0F2F5}
+.guide-list{list-style:none;font-size:12px;color:#8B93A7;line-height:1.8}
+.guide-list li{display:flex;align-items:center;gap:6px}
+.guide-list svg{width:12px;height:12px;flex-shrink:0}
+
+/* Color preview */
+.color-preview{display:flex;align-items:center;gap:16px;padding:16px;background:#1A1D26;border:1px solid #2A2F3D;border-radius:12px;margin-top:16px}
+.color-preview-label{font-size:14px;color:#8B93A7;white-space:nowrap}
+.color-preview-box{width:40px;height:40px;border-radius:8px;border:1px solid #2A2F3D;flex-shrink:0;transition:all .3s}
+.color-preview-value{font-size:14px;font-family:monospace;color:#F0F2F5}
+
+/* ============ Control Panel ============ */
+.exp-layout{display:flex;gap:24px}
+.exp-main{flex:1;min-width:0}
+.exp-sidebar{width:320px;flex-shrink:0;display:flex;flex-direction:column;gap:20px}
+
+.panel{background:#1A1D26;border:1px solid #2A2F3D;border-radius:16px;padding:20px}
+.panel-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;margin-bottom:16px;color:#F0F2F5}
+.panel-title svg{width:16px;height:16px;color:#4F6EF7}
+
+.brightness-item{margin-bottom:20px}
+.brightness-item:last-child{margin-bottom:0}
+.brightness-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.brightness-label{display:flex;align-items:center;gap:8px;font-size:14px;color:#F0F2F5}
+.brightness-dot{width:12px;height:12px;border-radius:50%}
+.brightness-value{font-size:12px;font-family:monospace;color:#8B93A7}
+
+/* Rainbow buttons */
+.rainbow-hint{font-size:12px;color:#8B93A7;margin-bottom:12px}
+.rainbow-grid{display:flex;flex-wrap:wrap;gap:8px}
+.rainbow-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9999px;font-size:13px;font-weight:500;color:#F0F2F5;border:1px solid transparent;transition:all .2s;cursor:pointer;background:rgba(128,128,128,.08)}
+.rainbow-btn:hover{transform:scale(1.05)}
+.rainbow-btn.active{ring:2px;--tw-ring-offset-width:1px;--tw-ring-offset-color:#1A1D26}
+.rainbow-dot{width:12px;height:12px;border-radius:50%}
+
+.rainbow-preview{margin-top:12px;padding:10px;background:#0F1117;border-radius:10px}
+.rainbow-preview-label{font-size:11px;color:#8B93A7;margin-bottom:8px}
+.rainbow-bars{display:flex;gap:8px}
+.rainbow-bar{flex:1;text-align:center}
+.rainbow-bar-track{height:6px;border-radius:3px;margin-bottom:4px;transition:all .3s}
+.rainbow-bar-val{font-size:10px;color:#8B93A7}
+
+/* Block status */
+.status-list{font-size:12px}
+.status-item{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(42,47,61,.5)}
+.status-item:last-child{border-bottom:none}
+.status-left{display:flex;align-items:center;gap:6px}
+.status-dot{width:10px;height:10px;border-radius:50%}
+.status-info{color:#8B93A7;display:flex;gap:12px}
+
+/* Tips */
+.panel-tips{font-size:12px;color:#8B93A7;line-height:1.8}
+
+/* Context Menu */
+.ctx-menu{position:fixed;z-index:200;background:#1A1D26;border:1px solid #2A2F3D;border-radius:12px;padding:16px;width:220px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.ctx-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ctx-title-row{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#F0F2F5}
+.ctx-dot{width:12px;height:12px;border-radius:50%}
+.ctx-close{padding:2px;color:#8B93A7;background:none;border:none;cursor:pointer;font-size:16px;line-height:1}
+.ctx-close:hover{color:#F0F2F5}
+.ctx-slider{margin-bottom:14px}
+.ctx-slider-label{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px}
+.ctx-slider-label span:first-child{color:#8B93A7}
+.ctx-slider-label span:last-child{color:#F0F2F5;font-family:monospace}
+.ctx-reset{width:100%;display:flex;align-items:center;justify-content:center;gap:4px;padding:8px;font-size:12px;color:#8B93A7;background:#0F1117;border:1px solid #2A2F3D;border-radius:8px;cursor:pointer;transition:all .2s}
+.ctx-reset:hover{background:#222633;color:#F0F2F5}
+
+/* ============ Responsive ============ */
+@media(max-width:1024px){
+.exp-layout{flex-direction:column}
+.exp-sidebar{width:100%}
+}
+@media(max-width:768px){
+.hero-title{font-size:36px}
+.hero-subtitle{font-size:16px}
+.mix-grid{grid-template-columns:repeat(3,1fr)}
+.formula-grid{grid-template-columns:1fr}
+.app-grid{grid-template-columns:repeat(2,1fr)}
+.nav-links{display:none}
+.nav-mobile-btn{display:block}
+.canvas-wrap{min-height:350px}
+.cta-box{padding:32px 24px}
+}
+@media(max-width:480px){
+.hero-title{font-size:28px}
+.mix-grid{grid-template-columns:repeat(2,1fr)}
+.app-grid{grid-template-columns:1fr}
+.section-title{font-size:22px}
+.card-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ NAVBAR ============ -->
+<nav class="navbar" id="navbar">
+  <a href="../index.html" class="back-btn">返回</a>
+  <div class="navbar-inner">
+    <div class="nav-logo" onclick="showPage('knowledge')">
+      <div class="nav-logo-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+      </div>
+      <span>色光混合实验室</span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link active" data-page="knowledge" onclick="showPage('knowledge')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+        基础知识
+      </button>
+      <button class="nav-link" data-page="experiment" onclick="showPage('experiment')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+        实验演示
+      </button>
+    </div>
+    <button class="nav-mobile-btn" onclick="toggleMobileMenu()" id="mobileMenuBtn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="nav-mobile-menu" id="mobileMenu">
+    <button class="nav-link active" data-page="knowledge" onclick="showPage('knowledge');toggleMobileMenu()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+      基础知识
+    </button>
+    <button class="nav-link" data-page="experiment" onclick="showPage('experiment');toggleMobileMenu()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg>
+      实验演示
+    </button>
+  </div>
+</nav>
+
+<!-- ============ PAGE 1: KNOWLEDGE ============ -->
+<div class="page active" id="page-knowledge">
+
+<!-- Hero -->
+<section class="hero" style="min-height:100vh;">
+  <canvas id="heroCanvas" class="hero-canvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      物理光学实验
+    </div>
+    <h1 class="hero-title">探索<span class="gradient">色光混合</span>的奥秘</h1>
+    <p class="hero-subtitle">通过交互式实验，理解加色混合原理。拖动色光、观察混合、探索光与色彩的科学之美。</p>
+    <div class="hero-buttons">
+      <button class="btn-primary" onclick="showPage('experiment')">
+        开始实验
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </button>
+      <a href="#psection-intro" class="btn-secondary">了解更多</a>
+    </div>
+  </div>
+  <div class="hero-scroll">
+    <span>向下滚动</span>
+    <div class="hero-scroll-ring"><div class="hero-scroll-dot"></div></div>
+  </div>
+</section>
+
+<div class="container">
+
+<!-- What is Color Mixing -->
+<section class="section" id="psection-intro">
+  <div class="section-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+    <h2 class="section-title">什么是色光混合？</h2>
+  </div>
+  <div class="card">
+    <p style="font-size:17px;margin-bottom:20px;line-height:1.8;">
+      色光混合是指两种或多种不同颜色的光叠加在一起时，产生新颜色的现象。这种混合方式称为<span style="color:#4F6EF7;font-weight:600;">加色混合</span>（Additive Color Mixing），广泛应用于显示屏、舞台灯光等领域。
+    </p>
+    <div class="card-grid" style="grid-template-columns:repeat(2,1fr);">
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:16px;background:rgba(15,17,23,.6);border-radius:10px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:rgba(79,110,247,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4F6EF7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div>
+          <h4 style="font-weight:600;margin-bottom:4px;">加色混合</h4>
+          <p style="font-size:13px;color:#8B93A7;line-height:1.6;">光线叠加时亮度增加，混合越多颜色越亮。三原色等量混合产生白色光。</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:16px;background:rgba(15,17,23,.6);border-radius:10px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:rgba(79,110,247,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4F6EF7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+        </div>
+        <div>
+          <h4 style="font-weight:600;margin-bottom:4px;">三原色原理</h4>
+          <p style="font-size:13px;color:#8B93A7;line-height:1.6;">红(R)、绿(G)、蓝(B)是色光的三原色，它们无法由其他色光混合得到。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Primary Colors -->
+<section class="section" id="psection-primary">
+  <div class="section-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+    <h2 class="section-title">三原色光</h2>
+  </div>
+  <p class="section-desc">红(Red)、绿(Green)、蓝(Blue)是色光的三原色。它们按照不同比例混合，可以产生各种颜色的光。</p>
+  <div class="card-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div class="card pcolor-card pcolor-red">
+      <div class="pcolor-circle"><div class="inner"></div><div class="light"></div></div>
+      <div class="pcolor-name">红光</div>
+      <div class="pcolor-en">Red Light</div>
+      <div class="pcolor-wave">波长约 620-750nm</div>
+      <div class="pcolor-desc">可见光谱中波长最长的光，穿透力最强，给人温暖、热烈的感觉。</div>
+    </div>
+    <div class="card pcolor-card pcolor-green">
+      <div class="pcolor-circle"><div class="inner"></div><div class="light"></div></div>
+      <div class="pcolor-name">绿光</div>
+      <div class="pcolor-en">Green Light</div>
+      <div class="pcolor-wave">波长约 495-570nm</div>
+      <div class="pcolor-desc">位于可见光谱中央，人眼最敏感的颜色，给人清新、自然的感觉。</div>
+    </div>
+    <div class="card pcolor-card pcolor-blue">
+      <div class="pcolor-circle"><div class="inner"></div><div class="light"></div></div>
+      <div class="pcolor-name">蓝光</div>
+      <div class="pcolor-en">Blue Light</div>
+      <div class="pcolor-wave">波长约 450-495nm</div>
+      <div class="pcolor-desc">可见光谱中波长较短的光，能量较高，给人冷静、深邃的感觉。</div>
+    </div>
+  </div>
+</section>
+
+<!-- Mixing Principle -->
+<section class="section">
+  <div class="section-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+    <h2 class="section-title">加色混合原理</h2>
+  </div>
+  <p class="section-desc">当两种或多种色光重叠时，它们的亮度相加，产生新的颜色。以下是所有可能的组合：</p>
+  <div class="mix-grid">
+    <div class="mix-item"><div class="mix-circle" style="background:#FF0000;box-shadow:0 0 20px rgba(255,0,0,.4)"></div><div class="mix-name">纯红光</div><div class="mix-desc">单一红色光源</div></div>
+    <div class="mix-item"><div class="mix-circle" style="background:#00FF00;box-shadow:0 0 20px rgba(0,255,0,.4)"></div><div class="mix-name">纯绿光</div><div class="mix-desc">单一绿色光源</div></div>
+    <div class="mix-item"><div class="mix-circle" style="background:#0000FF;box-shadow:0 0 20px rgba(0,0,255,.4)"></div><div class="mix-name">纯蓝光</div><div class="mix-desc">单一蓝色光源</div></div>
+    <div class="mix-item"><div class="mix-circle" style="background:#FFFF00;box-shadow:0 0 20px rgba(255,255,0,.4)"></div><div class="mix-name" style="color:#FFFF00">红 + 绿 = 黄</div><div class="mix-desc">两种原色混合</div></div>
+    <div class="mix-item"><div class="mix-circle" style="background:#FF00FF;box-shadow:0 0 20px rgba(255,0,255,.4)"></div><div class="mix-name" style="color:#FF00FF">红 + 蓝 = 品红</div><div class="mix-desc">两种原色混合</div></div>
+    <div class="mix-item"><div class="mix-circle" style="background:#00FFFF;box-shadow:0 0 20px rgba(0,255,255,.4)"></div><div class="mix-name" style="color:#00FFFF">绿 + 蓝 = 青</div><div class="mix-desc">两种原色混合</div></div>
+    <div class="mix-item" style="grid-column:span 1;"><div class="mix-circle" style="background:#FFFFFF;box-shadow:0 0 20px rgba(255,255,255,.4)"></div><div class="mix-name" style="color:#fff">三色混合 = 白</div><div class="mix-desc">三原色等量混合</div></div>
+  </div>
+
+  <div class="card" style="margin-top:24px;">
+    <h3 style="font-size:17px;font-weight:700;margin-bottom:16px;">混合公式</h3>
+    <div class="formula-grid">
+      <div class="formula-item">
+        <div class="formula-row"><div class="formula-dot" style="background:#FF0000"></div><span style="color:#8B93A7">+</span><div class="formula-dot" style="background:#00FF00"></div></div>
+        <div class="formula-result">= <span style="color:#FFFF00">黄色光</span></div>
+      </div>
+      <div class="formula-item">
+        <div class="formula-row"><div class="formula-dot" style="background:#FF0000"></div><span style="color:#8B93A7">+</span><div class="formula-dot" style="background:#0000FF"></div></div>
+        <div class="formula-result">= <span style="color:#FF00FF">品红光</span></div>
+      </div>
+      <div class="formula-item">
+        <div class="formula-row"><div class="formula-dot" style="background:#00FF00"></div><span style="color:#8B93A7">+</span><div class="formula-dot" style="background:#0000FF"></div></div>
+        <div class="formula-result">= <span style="color:#00FFFF">青色光</span></div>
+      </div>
+    </div>
+    <div class="formula-full">
+      <div class="formula-row">
+        <div class="formula-dot" style="background:#FF0000"></div><span style="color:#8B93A7">+</span>
+        <div class="formula-dot" style="background:#00FF00"></div><span style="color:#8B93A7">+</span>
+        <div class="formula-dot" style="background:#0000FF"></div>
+      </div>
+      <div class="formula-result">= <span style="color:#fff">白色光</span></div>
+      <p style="font-size:11px;color:#8B93A7;margin-top:6px;">三原色光等量混合产生白色光</p>
+    </div>
+  </div>
+</section>
+
+<!-- Applications -->
+<section class="section">
+  <div class="section-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+    <h2 class="section-title">生活中的应用</h2>
+  </div>
+  <div class="app-grid">
+    <div class="app-item">
+      <div class="app-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg></div>
+      <div class="app-title">显示设备</div>
+      <div class="app-desc">电视、电脑屏幕、手机屏幕通过红绿蓝三色子像素组合显示出各种颜色。</div>
+    </div>
+    <div class="app-item">
+      <div class="app-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg></div>
+      <div class="app-title">舞台灯光</div>
+      <div class="app-desc">舞台照明利用色光混合创造出绚丽多彩的视觉效果和氛围。</div>
+    </div>
+    <div class="app-item">
+      <div class="app-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>
+      <div class="app-title">摄影照明</div>
+      <div class="app-desc">摄影和电影制作中使用多种色光混合来实现色彩校正和创意照明。</div>
+    </div>
+    <div class="app-item">
+      <div class="app-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></div>
+      <div class="app-title">日光组成</div>
+      <div class="app-desc">太阳光看似白色，实际上是由各种颜色的光混合而成的。</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section" style="padding-top:40px;">
+  <div class="cta-box">
+    <h2 class="cta-title">准备好亲自动手实验了吗？</h2>
+    <p class="cta-desc">进入交互式实验界面，拖动色光色块，观察混合效果，探索色光混合的无限可能。</p>
+    <button class="btn-primary" style="font-size:17px;padding:16px 36px;" onclick="showPage('experiment')">
+      进入实验界面
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </button>
+  </div>
+</section>
+
+<div class="footer">
+  色光混合教学实验室 — 探索光与色彩的科学之美
+</div>
+
+</div><!-- /container -->
+</div><!-- /page-knowledge -->
+
+<!-- ============ PAGE 2: EXPERIMENT ============ -->
+<div class="page" id="page-experiment">
+  <div class="container" style="padding-top:24px;padding-bottom:40px;">
+
+    <!-- Header -->
+    <div class="exp-header">
+      <div class="exp-header-top">
+        <div>
+          <div class="exp-title-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><path d="M12 22a1 1 0 0 0 0-20 10 9 0 0 0-10 9 5 5 0 0 0 5 5h2.25a1.75 1.75 0 0 1 1.4 2.8l-.3.4a1.75 1.75 0 0 0 1.4 2.8z" opacity="0.5"/></svg>
+            <h1 class="exp-title">色光混合实验</h1>
+          </div>
+          <p class="exp-subtitle">拖动三原色光块，观察重叠区域的混合颜色。右键点击色块可调整大小和亮度。</p>
+        </div>
+        <button class="btn-secondary" style="font-size:13px;padding:10px 18px;flex-shrink:0;" onclick="resetBlocks()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          重置
+        </button>
+      </div>
+    </div>
+
+    <!-- Layout -->
+    <div class="exp-layout">
+      <!-- Main: Canvas -->
+      <div class="exp-main">
+        <div class="canvas-wrap" id="canvasWrap">
+          <div class="canvas-grid"></div>
+          <div class="canvas-cross"></div>
+
+          <!-- Light blocks will be injected by JS -->
+          <div id="blocksContainer"></div>
+
+          <!-- Guide -->
+          <div class="canvas-guide" id="canvasGuide">
+            <div class="guide-box">
+              <div class="guide-header">
+                <div class="guide-title-row">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                  操作指南
+                </div>
+                <button class="guide-close" onclick="hideGuide()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+              </div>
+              <ul class="guide-list">
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M19 15l3-3-3-3"/><path d="M15 19l-3 3-3-3"/></svg> 左键拖拽色块改变位置</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> 右键点击色块调整大小和亮度</li>
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><path d="M12 22a1 1 0 0 0 0-20 10 9 0 0 0-10 9 5 5 0 0 0 5 5h2.25a1.75 1.75 0 0 1 1.4 2.8l-.3.4a1.75 1.75 0 0 0 1.4 2.8z" opacity="0.5"/></svg> 观察重叠区域的混合颜色</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Color preview -->
+        <div class="color-preview">
+          <span class="color-preview-label">当前混合色：</span>
+          <div class="color-preview-box" id="colorPreviewBox"></div>
+          <span class="color-preview-value" id="colorPreviewValue">rgb(0, 0, 0)</span>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="exp-sidebar">
+
+        <!-- Brightness -->
+        <div class="panel">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            光源亮度控制
+          </div>
+          <div id="brightnessContainer"></div>
+        </div>
+
+        <!-- Rainbow -->
+        <div class="panel">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><path d="M12 22a1 1 0 0 0 0-20 10 9 0 0 0-10 9 5 5 0 0 0 5 5h2.25a1.75 1.75 0 0 1 1.4 2.8l-.3.4a1.75 1.75 0 0 0 1.4 2.8z" opacity="0.5"/></svg>
+            彩虹色快捷展示
+          </div>
+          <p class="rainbow-hint">点击按钮，自动调整三原色叠加出对应颜色</p>
+          <div class="rainbow-grid" id="rainbowContainer"></div>
+          <div class="rainbow-preview" id="rainbowPreview" style="display:none;">
+            <div class="rainbow-preview-label">当前三原色分量：</div>
+            <div class="rainbow-bars" id="rainbowBars"></div>
+          </div>
+        </div>
+
+        <!-- Block status -->
+        <div class="panel">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M19 15l3-3-3-3"/><path d="M15 19l-3 3-3-3"/></svg>
+            色块状态
+          </div>
+          <div class="status-list" id="statusList"></div>
+        </div>
+
+        <!-- Tips -->
+        <div class="panel">
+          <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+            小贴士
+          </div>
+          <p class="panel-tips">色光混合使用加色混合原理（Additive Mixing），重叠区域的颜色会变亮。三原色光等量混合时会产生白光。试着将三个色块完全重叠在一起看看吧！</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div class="ctx-menu" id="ctxMenu" style="display:none;">
+  <div class="ctx-header">
+    <div class="ctx-title-row"><span class="ctx-dot" id="ctxDot"></span><span id="ctxTitle"></span></div>
+    <button class="ctx-close" onclick="closeCtxMenu()">&times;</button>
+  </div>
+  <div class="ctx-slider">
+    <div class="ctx-slider-label"><span>大小</span><span id="ctxSizeVal">140px</span></div>
+    <input type="range" min="50" max="220" id="ctxSizeSlider">
+  </div>
+  <div class="ctx-slider">
+    <div class="ctx-slider-label"><span>亮度</span><span id="ctxBrightVal">100%</span></div>
+    <input type="range" min="5" max="200" id="ctxBrightSlider">
+  </div>
+  <button class="ctx-reset" onclick="resetCtxBlock()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    重置此色块
+  </button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  GLOBAL: Page Navigation
+// ═══════════════════════════════════════════════════
+function showPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(l=>l.classList.toggle('active',l.dataset.page===page));
+  window.scrollTo(0,0);
+  if(page==='experiment') initExperiment();
+}
+function toggleMobileMenu(){
+  document.getElementById('mobileMenu').classList.toggle('show');
+}
+// Navbar scroll
+window.addEventListener('scroll',()=>{
+  document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>20);
+});
+
+// ═══════════════════════════════════════════════════
+//  HERO: Animated Canvas
+// ═══════════════════════════════════════════════════
+(function(){
+  var canvas=document.getElementById('heroCanvas');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var t=0;
+  function resize(){
+    var dpr=window.devicePixelRatio||1;
+    canvas.width=canvas.offsetWidth*dpr;
+    canvas.height=canvas.offsetHeight*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resize();
+  window.addEventListener('resize',resize);
+  function draw(){
+    var w=canvas.offsetWidth,h=canvas.offsetHeight;
+    ctx.clearRect(0,0,w,h);
+    t+=0.005;
+    var orbs=[
+      {x:w*.3+Math.sin(t)*60,y:h*.4+Math.cos(t*.7)*40,r:120,c:'255,26,26'},
+      {x:w*.5+Math.sin(t*.8+2)*50,y:h*.35+Math.cos(t*.6)*50,r:110,c:'0,255,65'},
+      {x:w*.7+Math.sin(t*.6+4)*55,y:h*.45+Math.cos(t*.9)*35,r:115,c:'26,109,255'}
+    ];
+    orbs.forEach(function(o){
+      var g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
+      g.addColorStop(0,'rgba('+o.c+',0.3)');
+      g.addColorStop(.5,'rgba('+o.c+',0.1)');
+      g.addColorStop(1,'rgba('+o.c+',0)');
+      ctx.fillStyle=g;
+      ctx.fillRect(o.x-o.r,o.y-o.r,o.r*2,o.r*2);
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ═══════════════════════════════════════════════════
+//  EXPERIMENT: Core Logic
+// ═══════════════════════════════════════════════════
+var blocks=[
+  {id:'red',name:'红光',color:'#FF1A1A',x:180,y:180,size:140,brightness:1,cls:'lb-red'},
+  {id:'green',name:'绿光',color:'#00FF41',x:320,y:180,size:140,brightness:1,cls:'lb-green'},
+  {id:'blue',name:'蓝光',color:'#1A6DFF',x:250,y:300,size:140,brightness:1,cls:'lb-blue'}
+];
+var rainbowColors=[
+  {name:'red',label:'红',rgb:{r:255,g:0,b:0}},
+  {name:'orange',label:'橙',rgb:{r:255,g:127,b:0}},
+  {name:'yellow',label:'黄',rgb:{r:255,g:255,b:0}},
+  {name:'green',label:'绿',rgb:{r:0,g:255,b:0}},
+  {name:'cyan',label:'青',rgb:{r:0,g:255,b:255}},
+  {name:'blue',label:'蓝',rgb:{r:0,g:0,b:255}},
+  {name:'violet',label:'紫',rgb:{r:139,g:0,b:255}}
+];
+var dragInfo={id:null,ox:0,oy:0};
+var ctxBlockId=null;
+var activeRainbow=null;
+var expInited=false;
+
+function initExperiment(){
+  if(expInited)return;
+  expInited=true;
+  renderBlocks();
+  renderBrightnessControls();
+  renderRainbowButtons();
+  updateStatus();
+  updateColorPreview();
+  setupCanvasEvents();
+}
+
+function renderBlocks(){
+  var c=document.getElementById('blocksContainer');
+  c.innerHTML='';
+  blocks.forEach(function(b){
+    var el=document.createElement('div');
+    el.className='light-block '+b.cls;
+    el.dataset.id=b.id;
+    el.style.width=b.size+'px';
+    el.style.height=b.size+'px';
+    el.style.left=(b.x-b.size/2)+'px';
+    el.style.top=(b.y-b.size/2)+'px';
+    el.style.backgroundColor=b.color;
+    el.style.filter='brightness('+Math.max(0.1,b.brightness)+')';
+    el.innerHTML='<div class="light-overlay"></div><span class="block-label">'+b.name+'</span>';
+    c.appendChild(el);
+  });
+}
+
+function renderBrightnessControls(){
+  var c=document.getElementById('brightnessContainer');
+  c.innerHTML='';
+  blocks.forEach(function(b){
+    var div=document.createElement('div');
+    div.className='brightness-item';
+    var pct=Math.round(b.brightness*100);
+    div.innerHTML=
+      '<div class="brightness-header">'+
+        '<div class="brightness-label"><span class="brightness-dot" style="background:'+b.color+'"></span>'+b.name+'</div>'+
+        '<span class="brightness-value" id="bv-'+b.id+'">'+pct+'%</span>'+
+      '</div>'+
+      '<input type="range" min="5" max="200" value="'+pct+'" data-id="'+b.id+'" class="b-slider">';
+    c.appendChild(div);
+  });
+  c.querySelectorAll('.b-slider').forEach(function(sl){
+    var bid=sl.dataset.id;
+    var bk=blocks.find(function(x){return x.id===bid});
+    updateSliderBg(sl,bk.color,bk.brightness);
+    sl.addEventListener('input',function(){
+      var val=parseInt(this.value)/100;
+      var blk=blocks.find(function(x){return x.id===bid});
+      blk.brightness=val;
+      document.getElementById('bv-'+bid).textContent=Math.round(val*100)+'%';
+      updateSliderBg(this,blk.color,val);
+      updateBlockEl(blk);
+      updateStatus();
+      updateColorPreview();
+      activeRainbow=null;
+      updateRainbowActive();
+    });
+  });
+}
+
+function updateSliderBg(sl,color,val){
+  var p=Math.min(100,val*100);
+  sl.style.background='linear-gradient(to right,'+color+' 0%,'+color+' '+p+'%,#2A2F3D '+p+'%,#2A2F3D 100%)';
+}
+
+function renderRainbowButtons(){
+  var c=document.getElementById('rainbowContainer');
+  c.innerHTML='';
+  rainbowColors.forEach(function(rc,i){
+    var btn=document.createElement('button');
+    btn.className='rainbow-btn';
+    btn.dataset.name=rc.name;
+    btn.style.borderColor='rgba('+rc.rgb.r+','+rc.rgb.g+','+rc.rgb.b+',0.3)';
+    btn.style.background='rgba('+rc.rgb.r+','+rc.rgb.g+','+rc.rgb.b+',0.12)';
+    btn.innerHTML='<span class="rainbow-dot" style="background:rgb('+rc.rgb.r+','+rc.rgb.g+','+rc.rgb.b+')"></span>'+rc.label;
+    btn.onclick=function(){applyRainbow(i)};
+    c.appendChild(btn);
+  });
+}
+
+function applyRainbow(idx){
+  var target=rainbowColors[idx];
+  if(!target)return;
+  activeRainbow=target.name;
+  var wrap=document.getElementById('canvasWrap');
+  var rect=wrap.getBoundingClientRect();
+  var cw=wrap.offsetWidth,ch=wrap.offsetHeight;
+  var cx=cw/2,cy=ch/2;
+  var f={
+    r:target.rgb.r/255,
+    g:target.rgb.g/255,
+    b:target.rgb.b/255
+  };
+  blocks.forEach(function(b){
+    var factor=b.id==='red'?f.r:b.id==='green'?f.g:f.b;
+    b.brightness=Math.max(0.05,factor);
+    b.size=150;
+  });
+  blocks[0].x=cx-55;blocks[0].y=cy-25;
+  blocks[1].x=cx+55;blocks[1].y=cy-25;
+  blocks[2].x=cx;blocks[2].y=cy+45;
+  renderBlocks();
+  renderBrightnessControls();
+  updateStatus();
+  updateColorPreview();
+  updateRainbowActive();
+  showRainbowPreview();
+}
+
+function updateRainbowActive(){
+  document.querySelectorAll('.rainbow-btn').forEach(function(btn){
+    btn.classList.toggle('active',btn.dataset.name===activeRainbow);
+  });
+}
+
+function showRainbowPreview(){
+  var p=document.getElementById('rainbowPreview');
+  var c=document.getElementById('rainbowBars');
+  p.style.display='block';
+  c.innerHTML='';
+  blocks.forEach(function(b){
+    var bar=document.createElement('div');
+    bar.className='rainbow-bar';
+    var w=Math.min(100,b.brightness*100);
+    bar.innerHTML='<div class="rainbow-bar-track" style="background:'+b.color+';width:'+w+'%;margin:0 auto;opacity:'+Math.max(0.15,b.brightness)+'"></div><div class="rainbow-bar-val">'+Math.round(b.brightness*100)+'%</div>';
+    c.appendChild(bar);
+  });
+}
+
+function updateBlockEl(b){
+  var el=document.querySelector('.light-block[data-id="'+b.id+'"]');
+  if(!el)return;
+  el.style.width=b.size+'px';
+  el.style.height=b.size+'px';
+  el.style.left=(b.x-b.size/2)+'px';
+  el.style.top=(b.y-b.size/2)+'px';
+  el.style.filter='brightness('+Math.max(0.1,b.brightness)+')';
+}
+
+function updateStatus(){
+  var c=document.getElementById('statusList');
+  c.innerHTML='';
+  blocks.forEach(function(b){
+    var div=document.createElement('div');
+    div.className='status-item';
+    div.innerHTML='<div class="status-left"><span class="status-dot" style="background:'+b.color+'"></span><span style="color:#8B93A7">'+b.name+'</span></div><div class="status-info"><span>亮度: '+Math.round(b.brightness*100)+'%</span><span>大小: '+b.size+'px</span></div>';
+    c.appendChild(div);
+  });
+}
+
+function updateColorPreview(){
+  var r=Math.round(Math.min(255,blocks[0].brightness*255));
+  var g=Math.round(Math.min(255,blocks[1].brightness*255));
+  var b=Math.round(Math.min(255,blocks[2].brightness*255));
+  var rgb='rgb('+r+', '+g+', '+b+')';
+  document.getElementById('colorPreviewBox').style.backgroundColor=rgb;
+  document.getElementById('colorPreviewBox').style.boxShadow='0 0 12px '+rgb+'40';
+  document.getElementById('colorPreviewValue').textContent=rgb;
+}
+
+function resetBlocks(){
+  blocks=[
+    {id:'red',name:'红光',color:'#FF1A1A',x:180,y:180,size:140,brightness:1,cls:'lb-red'},
+    {id:'green',name:'绿光',color:'#00FF41',x:320,y:180,size:140,brightness:1,cls:'lb-green'},
+    {id:'blue',name:'蓝光',color:'#1A6DFF',x:250,y:300,size:140,brightness:1,cls:'lb-blue'}
+  ];
+  activeRainbow=null;
+  renderBlocks();
+  renderBrightnessControls();
+  updateStatus();
+  updateColorPreview();
+  updateRainbowActive();
+  document.getElementById('rainbowPreview').style.display='none';
+}
+
+// ─── Drag & Drop ───
+function setupCanvasEvents(){
+  var wrap=document.getElementById('canvasWrap');
+
+  function getBlockFromEl(el){
+    while(el&&el!==wrap){
+      if(el.classList&&el.classList.contains('light-block'))return el.dataset.id;
+      el=el.parentElement;
+    }
+    return null;
+  }
+
+  function onDown(e){
+    var target=e.target;
+    var bid=getBlockFromEl(target);
+    if(!bid)return;
+    if(e.type==='mousedown'&&e.button!==0)return;
+    e.preventDefault();
+    var rect=wrap.getBoundingClientRect();
+    var clientX=e.type.includes('touch')?e.touches[0].clientX:e.clientX;
+    var clientY=e.type.includes('touch')?e.touches[0].clientY:e.clientY;
+    var bx=clientX-rect.left,by=clientY-rect.top;
+    var b=blocks.find(function(x){return x.id===bid});
+    dragInfo={id:bid,ox:bx-b.x,oy:by-b.y};
+    var el=document.querySelector('.light-block[data-id="'+bid+'"]');
+    if(el)el.classList.add('dragging');
+  }
+
+  function onMove(e){
+    if(!dragInfo.id)return;
+    e.preventDefault();
+    var rect=wrap.getBoundingClientRect();
+    var clientX=e.type.includes('touch')?e.touches[0].clientX:e.clientX;
+    var clientY=e.type.includes('touch')?e.touches[0].clientY:e.clientY;
+    var mx=clientX-rect.left-dragInfo.ox;
+    var my=clientY-rect.top-dragInfo.oy;
+    var b=blocks.find(function(x){return x.id===dragInfo.id});
+    if(!b)return;
+    var hw=b.size/2;
+    b.x=Math.max(hw,Math.min(wrap.offsetWidth-hw,mx));
+    b.y=Math.max(hw,Math.min(wrap.offsetHeight-hw,my));
+    updateBlockEl(b);
+  }
+
+  function onUp(){
+    if(!dragInfo.id)return;
+    var el=document.querySelector('.light-block[data-id="'+dragInfo.id+'"]');
+    if(el)el.classList.remove('dragging');
+    dragInfo.id=null;
+  }
+
+  wrap.addEventListener('mousedown',onDown);
+  wrap.addEventListener('mousemove',onMove);
+  wrap.addEventListener('mouseup',onUp);
+  wrap.addEventListener('mouseleave',onUp);
+  wrap.addEventListener('touchstart',onDown,{passive:false});
+  wrap.addEventListener('touchmove',onMove,{passive:false});
+  wrap.addEventListener('touchend',onUp);
+
+  // Right click context menu
+  wrap.addEventListener('contextmenu',function(e){
+    var bid=getBlockFromEl(e.target);
+    if(!bid)return;
+    e.preventDefault();
+    openCtxMenu(bid,e.clientX,e.clientY);
+  });
+}
+
+function hideGuide(){
+  document.getElementById('canvasGuide').style.display='none';
+}
+
+// ─── Context Menu ───
+function openCtxMenu(bid,x,y){
+  var b=blocks.find(function(x){return x.id===bid});
+  if(!b)return;
+  ctxBlockId=bid;
+  var menu=document.getElementById('ctxMenu');
+  document.getElementById('ctxDot').style.backgroundColor=b.color;
+  document.getElementById('ctxTitle').textContent=b.name;
+  document.getElementById('ctxSizeSlider').value=b.size;
+  document.getElementById('ctxSizeVal').textContent=b.size+'px';
+  document.getElementById('ctxBrightSlider').value=Math.round(b.brightness*100);
+  document.getElementById('ctxBrightVal').textContent=Math.round(b.brightness*100)+'%';
+
+  // Update slider backgrounds
+  var sSlider=document.getElementById('ctxSizeSlider');
+  var bSlider=document.getElementById('ctxBrightSlider');
+  sSlider.style.background='linear-gradient(to right,'+b.color+' 0%,'+b.color+' '+((b.size-50)/170*100)+'%,#2A2F3D '+((b.size-50)/170*100)+'%,#2A2F3D 100%)';
+  bSlider.style.background='linear-gradient(to right,'+b.color+' 0%,'+b.color+' '+Math.min(100,b.brightness*100)+'%,#2A2F3D '+Math.min(100,b.brightness*100)+'%,#2A2F3D 100%)';
+
+  menu.style.display='block';
+  var sw=window.innerWidth,sh=window.innerHeight;
+  menu.style.left=Math.min(x,sw-240)+'px';
+  menu.style.top=Math.min(y,sh-300)+'px';
+
+  sSlider.oninput=function(){
+    var val=parseInt(this.value);
+    document.getElementById('ctxSizeVal').textContent=val+'px';
+    var blk=blocks.find(function(x){return x.id===ctxBlockId});
+    if(blk){blk.size=val;updateBlockEl(blk);updateStatus();}
+    this.style.background='linear-gradient(to right,'+b.color+' 0%,'+b.color+' '+((val-50)/170*100)+'%,#2A2F3D '+((val-50)/170*100)+'%,#2A2F3D 100%)';
+  };
+  bSlider.oninput=function(){
+    var val=parseInt(this.value)/100;
+    document.getElementById('ctxBrightVal').textContent=Math.round(val*100)+'%';
+    var blk=blocks.find(function(x){return x.id===ctxBlockId});
+    if(blk){blk.brightness=val;updateBlockEl(blk);updateStatus();updateColorPreview();}
+    this.style.background='linear-gradient(to right,'+b.color+' 0%,'+b.color+' '+Math.min(100,val*100)+'%,#2A2F3D '+Math.min(100,val*100)+'%,#2A2F3D 100%)';
+    activeRainbow=null;updateRainbowActive();
+  };
+}
+function closeCtxMenu(){
+  document.getElementById('ctxMenu').style.display='none';
+  ctxBlockId=null;
+}
+function resetCtxBlock(){
+  if(!ctxBlockId)return;
+  var blk=blocks.find(function(x){return x.id===ctxBlockId});
+  if(blk){blk.size=140;blk.brightness=1;updateBlockEl(blk);updateStatus();updateColorPreview();}
+  closeCtxMenu();
+}
+// Close context menu on outside click
+document.addEventListener('click',function(e){
+  var menu=document.getElementById('ctxMenu');
+  if(menu.style.display==='block'&&!menu.contains(e.target)){
+    closeCtxMenu();
+  }
+});
+// Close on ESC
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape')closeCtxMenu();
+});
+</script>
+</body>
+</html>
