@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自由落体实验 - 物理教学</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4ECDC4;
+            --secondary: #45B7D1;
+            --accent: #FF6B6B;
+            --warning: #FFD93D;
+            --light-bg: #F7FFF7;
+            --card-bg: #FFFFFF;
+            --text: #2C3E50;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #F7FFF7 0%, #E8F4F8 50%, #F0F8FF 100%);
+            min-height: 100vh;
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .back-btn{
+  color:var(--text2);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:6px;
+  transition:all .2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 99;
+}
+.back-btn:hover{
+  color:var(--text);
+  background:var(--bg3);
+}
+.back-btn::before{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(45deg);
+}
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 2.5rem 1rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 60%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -10%;
+            width: 40%;
+            height: 80%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 0.8rem;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(78, 205, 196, 0.1);
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.6rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding-bottom: 1rem;
+            border-bottom: 3px solid var(--primary);
+            position: relative;
+        }
+
+        .card h2::before {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 30%;
+            height: 3px;
+            background: var(--secondary);
+            border-radius: 0 3px 3px 0;
+        }
+
+        .animation-wrapper {
+            height: 420px;
+            background: linear-gradient(180deg, #E8F4F8 0%, #F0F8FF 50%, #E3F2FD 100%);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #D1E7DD;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .grid-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(90deg, transparent 0px, transparent 49px, rgba(78, 205, 196, 0.1) 50px),
+                repeating-linear-gradient(0deg, transparent 0px, transparent 49px, rgba(78, 205, 196, 0.1) 50px);
+        }
+
+        .height-scale {
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 30px;
+            width: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+
+        .scale-mark {
+            width: 100%;
+            height: 1px;
+            background: var(--primary);
+            position: relative;
+            opacity: 0.6;
+        }
+
+        .scale-mark.main {
+            height: 2px;
+            opacity: 1;
+        }
+
+        .scale-mark.main::after {
+            content: attr(data-value);
+            position: absolute;
+            left: 5px;
+            top: -6px;
+            font-size: 0.7rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .falling-object {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent) 0%, #FF8E8E 50%, #FF6B6B 100%);
+            border-radius: 50%;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 
+                0 6px 20px rgba(255, 107, 107, 0.4),
+                inset -8px -8px 16px rgba(0,0,0,0.15),
+                inset 8px 8px 16px rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: bottom 0.05s linear;
+            z-index: 10;
+        }
+
+        .falling-object::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 15px;
+            height: 15px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 50%;
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: linear-gradient(180deg, #6B8E23 0%, #556B2F 50%, #4A7C23 100%);
+            border-radius: 0 0 16px 16px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .ground::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+        }
+
+        .trajectory {
+            position: absolute;
+            left: 50%;
+            width: 3px;
+            background: linear-gradient(180deg, var(--accent) 0%, transparent 100%);
+            opacity: 0.3;
+            transform: translateX(-50%);
+            pointer-events: none;
+        }
+
+        .data-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .data-card {
+            background: linear-gradient(135deg, #E8F4F8 0%, #D1E7DD 100%);
+            padding: 1.2rem;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .data-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.2);
+        }
+
+        .data-card .label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 0.6rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+        }
+
+        .data-card .unit {
+            font-size: 0.8rem;
+            color: #888;
+            margin-left: 3px;
+        }
+
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.6rem;
+            font-size: 0.95rem;
+        }
+
+        .control-group label span {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .slider-container {
+            position: relative;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(90deg, #E8F4F8 0%, #D1E7DD 100%);
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(78, 205, 196, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.5);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 3px 10px rgba(78, 205, 196, 0.4);
+        }
+
+        .number-input {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 2px solid #E8F4F8;
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+        }
+
+        .number-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(78, 205, 196, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #E8F4F8;
+            color: var(--text);
+            border: 2px solid #D1E7DD;
+        }
+
+        .btn-secondary:hover {
+            background: #D1E7DD;
+            border-color: var(--primary);
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #FFF9E6 0%, #FFF3CD 100%);
+            border-left: 4px solid var(--warning);
+            padding: 1.2rem;
+            border-radius: 0 10px 10px 0;
+            margin-top: 1.5rem;
+        }
+
+        .info-box h4 {
+            color: #F4A261;
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .info-box p {
+            font-size: 0.9rem;
+            color: #555;
+            line-height: 1.7;
+        }
+
+        .formula-card {
+            background: linear-gradient(135deg, #E8F4F8 0%, #D1E7DD 100%);
+            border-left: 4px solid var(--primary);
+            padding: 1.2rem;
+            border-radius: 0 10px 10px 0;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .formula-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.15);
+        }
+
+        .formula-card h3 {
+            color: var(--primary);
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .formula {
+            font-family: 'Times New Roman', 'SimSun', serif;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text);
+            margin-bottom: 0.6rem;
+            text-align: center;
+            padding: 0.5rem;
+            background: rgba(255,255,255,0.8);
+            border-radius: 8px;
+        }
+
+        .formula-note {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .formula-note strong {
+            color: var(--primary);
+        }
+
+        .steps-list {
+            list-style: none;
+            counter-reset: step;
+        }
+
+        .steps-list li {
+            counter-increment: step;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            background: linear-gradient(135deg, #E8F4F8 0%, #D1E7DD 100%);
+            border-radius: 10px;
+            position: relative;
+            padding-left: 3rem;
+            transition: all 0.3s ease;
+        }
+
+        .steps-list li:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.15);
+        }
+
+        .steps-list li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0.8rem;
+            width: 1.8rem;
+            height: 1.8rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(78, 205, 196, 0.3);
+        }
+
+        .fact-card {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            border-left: 4px solid var(--secondary);
+            padding: 1.2rem;
+            border-radius: 0 10px 10px 0;
+            margin-top: 1.5rem;
+        }
+
+        .fact-card h4 {
+            color: var(--secondary);
+            margin-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .fact-card p {
+            font-size: 0.9rem;
+            color: #333;
+            line-height: 1.7;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+
+            header p {
+                font-size: 1rem;
+            }
+
+            .animation-wrapper {
+                height: 350px;
+            }
+
+            .data-panel {
+                grid-template-columns: 1fr;
+                gap: 0.8rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                padding: 0.9rem 1.2rem;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        .falling-object.idle {
+            animation: float 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .btn-primary.running {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔬 自由落体实验</h1>
+        <p>探索重力的奥秘 - 物理教学演示平台</p>
+    </header>
+
+    <div class="container">
+      <a href="../index.html" class="back-btn">返回</a>
+        <div class="card">
+            <h2>🎯 实验演示区</h2>
+            <div class="animation-wrapper" id="animationWrapper">
+                <div class="grid-lines"></div>
+                <div class="height-scale" id="heightScale"></div>
+                <div class="falling-object" id="fallingObject">球</div>
+                <div class="trajectory" id="trajectory"></div>
+                <div class="ground"></div>
+            </div>
+
+            <div class="data-panel">
+                <div class="data-card">
+                    <div class="label">当前高度</div>
+                    <div class="value" id="currentHeight">50<span class="unit">m</span></div>
+                </div>
+                <div class="data-card">
+                    <div class="label">当前速度</div>
+                    <div class="value" id="currentVelocity">0<span class="unit">m/s</span></div>
+                </div>
+                <div class="data-card">
+                    <div class="label">下落时间</div>
+                    <div class="value" id="currentTime">0<span class="unit">s</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>⚙️ 实验控制</h2>
+            
+            <div class="control-group">
+                <label for="heightSlider">初始高度: <span id="heightValue">50</span> 米</label>
+                <div class="slider-container">
+                    <input type="range" id="heightSlider" class="slider" min="10" max="100" value="50" step="5">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="gravityInput">重力加速度 (g): <span id="gravityValue">9.8</span> m/s²</label>
+                <input type="number" id="gravityInput" class="number-input" min="1" max="20" value="9.8" step="0.1">
+            </div>
+
+            <div class="control-group">
+                <label for="massInput">物体质量: <span id="massValue">1</span> kg</label>
+                <input type="number" id="massInput" class="number-input" min="0.1" max="10" value="1" step="0.1">
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" id="startBtn">▶️ 开始实验</button>
+                <button class="btn btn-secondary" id="resetBtn">🔄 重置</button>
+            </div>
+
+            <div class="info-box">
+                <h4>💡 科学原理</h4>
+                <p>自由落体是指物体只在重力作用下从静止开始下落的运动。在忽略空气阻力的情况下，<strong>所有物体下落的加速度都相同，与质量无关</strong>！这就是伽利略著名的比萨斜塔实验所证明的结论。</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📐 物理公式</h2>
+            
+            <div class="formula-card">
+                <h3>1️⃣ 下落位移公式</h3>
+                <div class="formula">h = ½gt²</div>
+                <div class="formula-note">其中 <strong>h</strong> 是下落距离，<strong>g</strong> 是重力加速度，<strong>t</strong> 是下落时间</div>
+            </div>
+
+            <div class="formula-card">
+                <h3>2️⃣ 速度公式</h3>
+                <div class="formula">v = gt</div>
+                <div class="formula-note">其中 <strong>v</strong> 是末速度，<strong>g</strong> 是重力加速度，<strong>t</strong> 是下落时间</div>
+            </div>
+
+            <div class="formula-card">
+                <h3>3️⃣ 速度与位移关系</h3>
+                <div class="formula">v² = 2gh</div>
+                <div class="formula-note">其中 <strong>v</strong> 是末速度，<strong>g</strong> 是重力加速度，<strong>h</strong> 是下落距离</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📚 实验步骤</h2>
+            
+            <ol class="steps-list">
+                <li>设置初始高度（10-100米），观察不同高度对下落时间的影响</li>
+                <li>调整重力加速度（默认9.8 m/s²），模拟不同星球的重力环境</li>
+                <li>设置物体质量，观察质量是否影响下落速度</li>
+                <li>点击「开始实验」按钮，观察球体下落过程</li>
+                <li>记录落地时间，验证自由落体公式的正确性</li>
+                <li>尝试不同参数组合，探索自由落体的规律</li>
+            </ol>
+
+            <div class="fact-card">
+                <h4>✨ 伽利略的发现</h4>
+                <p>据说伽利略在比萨斜塔上同时扔下两个不同重量的铁球，结果它们同时落地。这个实验推翻了亚里士多德认为"重物下落更快"的观点，奠定了现代物理学的基础。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fallingObject = document.getElementById('fallingObject');
+        const animationWrapper = document.getElementById('animationWrapper');
+        const trajectory = document.getElementById('trajectory');
+        const heightScale = document.getElementById('heightScale');
+        
+        const heightSlider = document.getElementById('heightSlider');
+        const heightValue = document.getElementById('heightValue');
+        const gravityInput = document.getElementById('gravityInput');
+        const gravityValue = document.getElementById('gravityValue');
+        const massInput = document.getElementById('massInput');
+        const massValue = document.getElementById('massValue');
+        
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        const currentHeight = document.getElementById('currentHeight');
+        const currentVelocity = document.getElementById('currentVelocity');
+        const currentTime = document.getElementById('currentTime');
+
+        const groundHeight = 30;
+        let animationId = null;
+        let isRunning = false;
+        let startTime = 0;
+        let initialHeight = 50;
+        let trajectoryStartY = 0;
+
+        function buildHeightScale() {
+            heightScale.innerHTML = '';
+            const maxHeight = 100;
+            const areaHeight = animationWrapper.offsetHeight - groundHeight;
+            
+            for (let i = 0; i <= maxHeight; i += 20) {
+                const mark = document.createElement('div');
+                mark.className = 'scale-mark' + (i % 20 === 0 ? ' main' : '');
+                mark.style.top = ((100 - i) / 100 * areaHeight) + 'px';
+                if (i % 20 === 0) {
+                    mark.setAttribute('data-value', i + 'm');
+                }
+                heightScale.appendChild(mark);
+            }
+        }
+
+        function updateObjectPosition(heightMeters) {
+            const areaHeight = animationWrapper.offsetHeight - groundHeight;
+            const maxHeightMeters = 100;
+            const objectBottom = (heightMeters / maxHeightMeters) * areaHeight + groundHeight;
+            fallingObject.style.bottom = objectBottom + 'px';
+            
+            const trajHeight = trajectoryStartY - (areaHeight - objectBottom + groundHeight);
+            trajectory.style.height = Math.max(0, trajHeight) + 'px';
+            trajectory.style.top = (areaHeight - objectBottom + groundHeight) + 'px';
+        }
+
+        function resetExperiment() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            isRunning = false;
+            fallingObject.classList.add('idle');
+            startBtn.classList.remove('running');
+            startBtn.innerHTML = '▶️ 开始实验';
+            startBtn.disabled = false;
+            
+            const areaHeight = animationWrapper.offsetHeight - groundHeight;
+            trajectoryStartY = areaHeight + groundHeight;
+            trajectory.style.height = '0px';
+            trajectory.style.top = trajectoryStartY + 'px';
+            
+            updateObjectPosition(initialHeight);
+            currentHeight.innerHTML = initialHeight + '<span class="unit">m</span>';
+            currentVelocity.innerHTML = '0<span class="unit">m/s</span>';
+            currentTime.innerHTML = '0<span class="unit">s</span>';
+        }
+
+        function startExperiment() {
+            if (isRunning) {
+                isRunning = false;
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                startBtn.innerHTML = '▶️ 继续';
+                startBtn.classList.remove('running');
+                fallingObject.classList.remove('idle');
+                return;
+            }
+            
+            isRunning = true;
+            fallingObject.classList.remove('idle');
+            startBtn.classList.add('running');
+            startBtn.innerHTML = '⏸️ 暂停';
+            startTime = performance.now();
+            
+            const g = parseFloat(gravityInput.value);
+            const h0 = initialHeight;
+            const areaHeight = animationWrapper.offsetHeight - groundHeight;
+            trajectoryStartY = (100 - h0) / 100 * areaHeight + groundHeight;
+            trajectory.style.top = trajectoryStartY + 'px';
+            trajectory.style.height = '0px';
+
+            function animate(currentTimeMs) {
+                if (!isRunning) return;
+
+                const t = (currentTimeMs - startTime) / 1000;
+                const h = h0 - 0.5 * g * t * t;
+                const v = g * t;
+
+                if (h <= 0) {
+                    updateObjectPosition(0);
+                    currentHeight.innerHTML = '0<span class="unit">m</span>';
+                    currentVelocity.innerHTML = v.toFixed(2) + '<span class="unit">m/s</span>';
+                    currentTime.innerHTML = t.toFixed(2) + '<span class="unit">s</span>';
+                    isRunning = false;
+                    startBtn.innerHTML = '▶️ 开始实验';
+                    startBtn.classList.remove('running');
+                    return;
+                }
+
+                updateObjectPosition(h);
+                currentHeight.innerHTML = h.toFixed(2) + '<span class="unit">m</span>';
+                currentVelocity.innerHTML = v.toFixed(2) + '<span class="unit">m/s</span>';
+                currentTime.innerHTML = t.toFixed(2) + '<span class="unit">s</span>';
+
+                animationId = requestAnimationFrame(animate);
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        heightSlider.addEventListener('input', () => {
+            initialHeight = parseInt(heightSlider.value);
+            heightValue.textContent = initialHeight;
+            if (!isRunning) {
+                resetExperiment();
+            }
+        });
+
+        gravityInput.addEventListener('input', () => {
+            gravityValue.textContent = gravityInput.value;
+        });
+
+        massInput.addEventListener('input', () => {
+            massValue.textContent = massInput.value;
+        });
+
+        startBtn.addEventListener('click', startExperiment);
+        resetBtn.addEventListener('click', resetExperiment);
+
+        window.addEventListener('resize', () => {
+            buildHeightScale();
+            if (!isRunning) {
+                resetExperiment();
+            }
+        });
+
+        buildHeightScale();
+        resetExperiment();
+    </script>
+</body>
+</html>
