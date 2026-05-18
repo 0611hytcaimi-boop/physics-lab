@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简谐运动弹簧振子交互式演示</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  color: #e0e0e0;
+  min-height: 100vh;
+  padding: 20px;
+}
+.back-btn{
+  color:var(--text2);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:6px;
+  transition:all .2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 99;
+}
+.back-btn:hover{
+  color:var(--text);
+  background:var(--bg3);
+}
+.back-btn::before{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(45deg);
+}
+
+.container { max-width: 1200px; margin: 0 auto; }
+h1 {
+  text-align: center; font-size: 28px; margin-bottom: 8px;
+  color: #00d4ff; text-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+}
+.formula-bar {
+  text-align: center; background: rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 12px; margin-bottom: 20px; font-size: 18px;
+}
+.formula-bar span { color: #ffd700; font-weight: bold; }
+.main-layout { display: flex; gap: 20px; flex-wrap: wrap; }
+.canvas-area { flex: 2; min-width: 620px; position: relative; }
+.control-panel {
+  flex: 1; min-width: 280px; background: rgba(255,255,255,0.06);
+  border-radius: 15px; padding: 20px;
+}
+canvas {
+  background: rgba(0,0,0,0.3); border-radius: 15px;
+  width: 100%; display: block; margin-bottom: 15px;
+}
+.section-title {
+  font-size: 16px; font-weight: bold; color: #00d4ff;
+  margin-bottom: 15px; padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0,212,255,0.3);
+}
+.slider-group { margin-bottom: 20px; }
+.slider-group label {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 8px; font-size: 14px;
+}
+.slider-group label .value { color: #ffd700; font-weight: bold; font-size: 16px; }
+input[type="range"] {
+  width: 100%; height: 8px; -webkit-appearance: none;
+  appearance: none; background: linear-gradient(90deg, #00d4ff, #0077b6);
+  border-radius: 4px; outline: none; cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 20px; height: 20px;
+  background: #ffd700; border-radius: 50%; cursor: pointer;
+  box-shadow: 0 0 10px rgba(255,215,0,0.5);
+}
+.data-display { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 15px; margin-bottom: 20px; }
+.data-row {
+  display: flex; justify-content: space-between; padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px;
+}
+.data-row:last-child { border-bottom: none; }
+.data-row .label { color: #a0a0a0; }
+.data-row .data { color: #00ff88; font-weight: bold; font-family: 'Consolas', monospace; }
+.btn-group { display: flex; gap: 10px; }
+.btn {
+  flex: 1; padding: 12px; border: none; border-radius: 8px;
+  font-size: 15px; font-weight: bold; cursor: pointer; transition: all 0.2s;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn-start { background: linear-gradient(135deg, #00b894, #00cec9); color: #fff; }
+.btn-pause { background: linear-gradient(135deg, #fdcb6e, #e17055); color: #fff; }
+.btn-reset { background: linear-gradient(135deg, #a29bfe, #6c5ce7); color: #fff; }
+.mass-info {
+  text-align: center; padding: 12px; background: rgba(0,212,255,0.1);
+  border-radius: 8px; margin-bottom: 20px; font-size: 14px; color: #00d4ff;
+}
+.mass-info strong { font-size: 20px; color: #ffd700; }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="../index.html" class="back-btn">返回</a>
+  <h1>简谐运动弹簧振子交互式演示</h1>
+  <div class="formula-bar">
+    回复力公式：<span>F = -kx</span> &nbsp;|&nbsp; 周期公式：<span>T = 2π√(m/k)</span> &nbsp;|&nbsp; 位移方程：<span>x = A·cos(ωt)</span>
+  </div>
+  <div class="main-layout">
+    <div class="canvas-area">
+      <canvas id="springCanvas"></canvas>
+      <canvas id="dispGraph"></canvas>
+      <canvas id="forceGraph"></canvas>
+    </div>
+    <div class="control-panel">
+      <div class="section-title">参数控制</div>
+      <div class="mass-info">质量 m = <strong>1.0 kg</strong>（固定）</div>
+      <div class="slider-group">
+        <label>
+          <span>劲度系数 k</span>
+          <span class="value" id="kValue">20 N/m</span>
+        </label>
+        <input type="range" id="kSlider" min="5" max="80" value="20" step="1">
+      </div>
+      <div class="slider-group">
+        <label>
+          <span>初始位移（振幅 A）</span>
+          <span class="value" id="aValue">0.15 m</span>
+        </label>
+        <input type="range" id="aSlider" min="0.05" max="0.40" value="0.15" step="0.01">
+      </div>
+      <div class="section-title">实时数据</div>
+      <div class="data-display">
+        <div class="data-row">
+          <span class="label">当前位移 x</span>
+          <span class="data" id="dispData">+0.0000 m</span>
+        </div>
+        <div class="data-row">
+          <span class="label">回复力 F</span>
+          <span class="data" id="forceData">+0.0000 N</span>
+        </div>
+        <div class="data-row">
+          <span class="label">振动周期 T</span>
+          <span class="data" id="periodData">0.0000 s</span>
+        </div>
+        <div class="data-row">
+          <span class="label">角频率 ω</span>
+          <span class="data" id="omegaData">0.0000 rad/s</span>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-start" id="startBtn">开始</button>
+        <button class="btn btn-pause" id="pauseBtn">暂停</button>
+        <button class="btn btn-reset" id="resetBtn">重置</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const springCanvas = document.getElementById('springCanvas');
+const springCtx = springCanvas.getContext('2d');
+const dispCanvas = document.getElementById('dispGraph');
+const dispCtx = dispCanvas.getContext('2d');
+const forceCanvas = document.getElementById('forceGraph');
+const forceCtx = forceCanvas.getContext('2d');
+
+const SPRING_H = 320;
+const GRAPH_H = 200;
+
+function initCanvas(canvas, cssHeight) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const cssWidth = rect.width;
+  canvas.style.width = cssWidth + 'px';
+  canvas.style.height = cssHeight + 'px';
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+}
+
+function initAllCanvases() {
+  initCanvas(springCanvas, SPRING_H);
+  initCanvas(dispCanvas, GRAPH_H);
+  initCanvas(forceCanvas, GRAPH_H);
+}
+initAllCanvases();
+window.addEventListener('resize', () => { initAllCanvases(); });
+
+const getCW = () => springCanvas.style.width ? parseFloat(springCanvas.style.width) : 600;
+const getSpringH = () => SPRING_H;
+const getGraphH = () => GRAPH_H;
+
+let k = 20;
+let amplitude = 0.15;
+let mass = 1.0;
+let running = false;
+let startTime = 0;
+let elapsed = 0;
+let pausedTime = 0;
+
+const dispHistory = [];
+const forceHistory = [];
+const maxHistoryTime = 6;
+
+function getOmega() { return Math.sqrt(k / mass); }
+function getPeriod() { return 2 * Math.PI / getOmega(); }
+function getDisplacement(t) { return amplitude * Math.cos(getOmega() * t); }
+function getForce(t) { return -k * getDisplacement(t); }
+
+function updateDisplay() {
+  const t = running ? elapsed : pausedTime;
+  const x = getDisplacement(t);
+  const F = getForce(t);
+  const T = getPeriod();
+  const omega = getOmega();
+
+  const sign = x >= 0 ? '+' : '-';
+  const signF = F >= 0 ? '+' : '-';
+  document.getElementById('dispData').textContent = sign + Math.abs(x).toFixed(4) + ' m';
+  document.getElementById('forceData').textContent = signF + Math.abs(F).toFixed(4) + ' N';
+  document.getElementById('periodData').textContent = T.toFixed(4) + ' s';
+  document.getElementById('omegaData').textContent = omega.toFixed(4) + ' rad/s';
+}
+
+function drawSpring(ctx, W, H, displacement) {
+  ctx.clearRect(0, 0, W, H);
+
+  const wallX = 60;
+  const centerY = H / 2;
+  const ballRadius = 30;
+  const maxDisp = 0.40;
+  const availW = W - wallX - ballRadius - 50;
+  const pixelDisp = (displacement / maxDisp) * (availW / 2);
+  const ballX = W / 2 + pixelDisp;
+  const coils = 16;
+  const coilAmp = 22;
+
+  ctx.fillStyle = '#7a7a7a';
+  ctx.fillRect(wallX - 18, centerY - 70, 18, 140);
+  ctx.strokeStyle = '#999';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 8; i++) {
+    ctx.beginPath();
+    ctx.moveTo(wallX - 18, centerY - 58 + i * 17);
+    ctx.lineTo(wallX - 2, centerY - 48 + i * 17);
+    ctx.stroke();
+  }
+
+  const springStartX = wallX;
+  const springEndX = ballX - ballRadius;
+  const springLen = springEndX - springStartX;
+  const coilW = springLen / coils;
+
+  ctx.strokeStyle = '#00d4ff';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(springStartX, centerY);
+  for (let i = 0; i < coils; i++) {
+    const x0 = springStartX + coilW * i;
+    const x1 = x0 + coilW * 0.5;
+    const x2 = x0 + coilW;
+    ctx.quadraticCurveTo(x0 + coilW * 0.25, centerY - coilAmp, x1, centerY);
+    ctx.quadraticCurveTo(x0 + coilW * 0.75, centerY + coilAmp, x2, centerY);
+  }
+  ctx.stroke();
+
+  const grad = ctx.createRadialGradient(ballX - 8, centerY - 10, 2, ballX, centerY, ballRadius);
+  grad.addColorStop(0, '#ffaaaa');
+  grad.addColorStop(0.4, '#e74c3c');
+  grad.addColorStop(1, '#922b21');
+  ctx.beginPath();
+  ctx.arc(ballX, centerY, ballRadius, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = '#ff8888';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 16px Consolas';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('m', ballX, centerY);
+
+  const eqX = W / 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath();
+  ctx.moveTo(eqX, centerY - 100);
+  ctx.lineTo(eqX, centerY + 110);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#b0b0b0';
+  ctx.font = '13px Microsoft YaHei';
+  ctx.textAlign = 'center';
+  ctx.fillText('平衡位置', eqX, centerY + 125);
+
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 2;
+  const arrowY = centerY + 55;
+  ctx.beginPath();
+  ctx.moveTo(eqX, arrowY);
+  ctx.lineTo(ballX, arrowY);
+  ctx.stroke();
+
+  if (Math.abs(ballX - eqX) > 20) {
+    const dir = ballX > eqX ? -1 : 1;
+    ctx.beginPath();
+    ctx.moveTo(eqX + dir * 10, arrowY - 8);
+    ctx.lineTo(eqX, arrowY);
+    ctx.lineTo(eqX + dir * 10, arrowY + 8);
+    ctx.closePath();
+    ctx.fillStyle = '#ffd700';
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#ffd700';
+  ctx.font = '13px Consolas';
+  ctx.fillText('x = ' + displacement.toFixed(3) + ' m', (eqX + ballX) / 2, arrowY - 14);
+
+  const F = -k * displacement;
+  const Fscale = 1.8;
+  const fArrowLen = -F * Fscale;
+  const fArrowY = centerY - 55;
+
+  if (Math.abs(fArrowLen) > 5) {
+    ctx.strokeStyle = '#00ff88';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ballX, fArrowY);
+    ctx.lineTo(ballX + fArrowLen, fArrowY);
+    ctx.stroke();
+
+    const fd = fArrowLen > 0 ? 1 : -1;
+    ctx.beginPath();
+    ctx.moveTo(ballX + fArrowLen - fd * 10, fArrowY - 7);
+    ctx.lineTo(ballX + fArrowLen, fArrowY);
+    ctx.lineTo(ballX + fArrowLen - fd * 10, fArrowY + 7);
+    ctx.closePath();
+    ctx.fillStyle = '#00ff88';
+    ctx.fill();
+
+    ctx.fillStyle = '#00ff88';
+    ctx.font = 'bold 13px Consolas';
+    ctx.fillText('F = ' + F.toFixed(2) + ' N', ballX + fArrowLen / 2, fArrowY - 14);
+  }
+
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Microsoft YaHei';
+  ctx.textAlign = 'left';
+  ctx.fillText('墙壁', wallX - 48, centerY + 5);
+}
+
+function drawGraph(ctx, W, H, data, label, unit, color, fixedScale) {
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { top: 30, right: 25, bottom: 35, left: 70 };
+  const gW = W - pad.left - pad.right;
+  const gH = H - pad.top - pad.bottom;
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top);
+  ctx.lineTo(pad.left, pad.top + gH);
+  ctx.lineTo(pad.left + gW, pad.top + gH);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top + gH / 2);
+  ctx.lineTo(pad.left + gW, pad.top + gH / 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  let maxVal;
+  if (fixedScale) {
+    maxVal = fixedScale;
+  } else {
+    maxVal = Math.max(0.1, ...data.map(d => Math.abs(d.value)));
+  }
+
+  ctx.fillStyle = '#a0a0a0';
+  ctx.font = '11px Consolas';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('+' + maxVal.toFixed(2), pad.left - 6, pad.top + 8);
+  ctx.fillText('-' + maxVal.toFixed(2), pad.left - 6, pad.top + gH - 2);
+  ctx.fillText('0', pad.left - 6, pad.top + gH / 2);
+
+  ctx.fillStyle = '#00d4ff';
+  ctx.font = 'bold 13px Microsoft YaHei';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(label + ' / ' + unit, pad.left + 5, 6);
+
+  if (data.length < 2) return;
+
+  const curTime = running ? elapsed : pausedTime;
+  const tMin = Math.max(0, curTime - maxHistoryTime);
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  let started = false;
+  for (let i = 0; i < data.length; i++) {
+    const t = data[i].time;
+    if (t < tMin) continue;
+    const px = pad.left + ((t - tMin) / maxHistoryTime) * gW;
+    const py = pad.top + gH / 2 - (data[i].value / maxVal) * (gH / 2) * 0.88;
+    if (!started) { ctx.moveTo(px, py); started = true; }
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  if (data.length > 0) {
+    const last = data[data.length - 1];
+    const px = pad.left + ((last.time - tMin) / maxHistoryTime) * gW;
+    const py = pad.top + gH / 2 - (last.value / maxVal) * (gH / 2) * 0.88;
+    ctx.beginPath();
+    ctx.arc(px, py, 5, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = '#909090';
+  ctx.font = '11px Consolas';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let i = 0; i <= 6; i++) {
+    const t = tMin + (maxHistoryTime / 6) * i;
+    const px = pad.left + (i / 6) * gW;
+    ctx.fillText(t.toFixed(1) + 's', px, pad.top + gH + 6);
+  }
+}
+
+function animate(ts) {
+  if (!running) return;
+  if (!startTime) startTime = ts;
+  elapsed = pausedTime + (ts - startTime) / 1000;
+
+  const x = getDisplacement(elapsed);
+  const F = getForce(elapsed);
+
+  dispHistory.push({ time: elapsed, value: x });
+  forceHistory.push({ time: elapsed, value: F });
+
+  const tMin = Math.max(0, elapsed - maxHistoryTime);
+  while (dispHistory.length > 0 && dispHistory[0].time < tMin) dispHistory.shift();
+  while (forceHistory.length > 0 && forceHistory[0].time < tMin) forceHistory.shift();
+
+  const W = getCW();
+  drawSpring(springCtx, W, getSpringH(), x);
+  drawGraph(dispCtx, W, getGraphH(), dispHistory, '位移 x', 'm', '#00d4ff', amplitude);
+  drawGraph(forceCtx, W, getGraphH(), forceHistory, '回复力 F', 'N', '#ff6b6b', null);
+  updateDisplay();
+
+  requestAnimationFrame(animate);
+}
+
+function refreshStatic() {
+  const t = pausedTime;
+  const x = getDisplacement(t);
+  const W = getCW();
+  drawSpring(springCtx, W, getSpringH(), x);
+  drawGraph(dispCtx, W, getGraphH(), dispHistory, '位移 x', 'm', '#00d4ff', amplitude);
+  drawGraph(forceCtx, W, getGraphH(), forceHistory, '回复力 F', 'N', '#ff6b6b', null);
+}
+
+document.getElementById('kSlider').addEventListener('input', function() {
+  k = parseFloat(this.value);
+  document.getElementById('kValue').textContent = k + ' N/m';
+  if (!running) {
+    updateDisplay();
+    refreshStatic();
+  }
+});
+
+document.getElementById('aSlider').addEventListener('input', function() {
+  amplitude = parseFloat(this.value);
+  document.getElementById('aValue').textContent = amplitude.toFixed(2) + ' m';
+  if (!running) {
+    pausedTime = 0;
+    dispHistory.length = 0;
+    forceHistory.length = 0;
+    updateDisplay();
+    refreshStatic();
+  }
+});
+
+document.getElementById('startBtn').addEventListener('click', function() {
+  if (running) return;
+  running = true;
+  startTime = 0;
+  requestAnimationFrame(animate);
+});
+
+document.getElementById('pauseBtn').addEventListener('click', function() {
+  if (!running) return;
+  running = false;
+  pausedTime = elapsed;
+  refreshStatic();
+});
+
+document.getElementById('resetBtn').addEventListener('click', function() {
+  running = false;
+  startTime = 0;
+  elapsed = 0;
+  pausedTime = 0;
+  dispHistory.length = 0;
+  forceHistory.length = 0;
+  updateDisplay();
+  const W = getCW();
+  drawSpring(springCtx, W, getSpringH(), amplitude);
+  drawGraph(dispCtx, W, getGraphH(), [], '位移 x', 'm', '#00d4ff', amplitude);
+  drawGraph(forceCtx, W, getGraphH(), [], '回复力 F', 'N', '#ff6b6b', null);
+});
+
+updateDisplay();
+const W0 = getCW();
+drawSpring(springCtx, W0, getSpringH(), amplitude);
+</script>
+</body>
+</html>
