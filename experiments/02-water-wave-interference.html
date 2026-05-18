@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>虚拟物理实验室：水波干涉模拟 | 双波源干涉可视化</title>
+    <style>
+        * {
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #1a2a3a 0%, #0f1a24 100%);
+            font-family: 'Segoe UI', Roboto, 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .back-btn{
+        color:var(--text2);
+        text-decoration:none;
+        font-size:14px;
+        display:flex;
+        align-items:center;
+        gap:6px;
+        padding:4px 10px;
+        border-radius:6px;
+        transition:all .2s;
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        z-index: 99;
+        }
+        .back-btn:hover{
+        color:var(--text);
+        background:var(--bg3);
+        }
+        .back-btn::before{
+        content:'';
+        display:inline-block;
+        width:8px;
+        height:8px;
+        border-left:2px solid currentColor;
+        border-bottom:2px solid currentColor;
+        transform:rotate(45deg);
+        }
+
+        /* 实验卡片容器 */
+        .lab-container {
+            background: rgba(30, 40, 50, 0.65);
+            backdrop-filter: blur(4px);
+            border-radius: 2.5rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            padding: 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* 主画布区域 */
+        .canvas-panel {
+            display: flex;
+            justify-content: center;
+            border-radius: 1.8rem;
+            background: #0a1118;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        canvas {
+            display: block;
+            border-radius: 1.5rem;
+            cursor: crosshair;
+            width: 100%;
+            height: auto;
+            background: #03060a;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        /* 控制台样式 */
+        .control-panel {
+            margin-top: 1.2rem;
+            background: rgba(20, 28, 35, 0.85);
+            backdrop-filter: blur(8px);
+            border-radius: 1.8rem;
+            padding: 1rem 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: space-between;
+        }
+
+        .control-group {
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+            min-width: 130px;
+            flex: 1;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+        }
+
+        .control-group label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #c0e0ff;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .control-group label i {
+            font-style: normal;
+            font-weight: bold;
+            background: #2c3e4e;
+            padding: 0px 6px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+        }
+
+        input {
+            width: 100%;
+            cursor: pointer;
+            background: #232e38;
+            height: 4px;
+            border-radius: 10px;
+            accent-color: #3bc9db;
+        }
+
+        .value-display {
+            display: inline-block;
+            background: #00000066;
+            padding: 0px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-family: monospace;
+            color: #bbf0ff;
+            margin-left: 8px;
+        }
+
+        .param-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button {
+            background: #2c4e64;
+            border: none;
+            padding: 6px 18px;
+            border-radius: 32px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            backdrop-filter: blur(2px);
+        }
+
+        button:hover {
+            background: #3f7b96;
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .status-badge {
+            background: #1e2f3b;
+            border-radius: 30px;
+            padding: 5px 16px;
+            font-size: 0.75rem;
+            font-family: monospace;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #9bc6df;
+        }
+
+        hr {
+            border-color: #2f4b5c;
+            margin: 0 4px;
+        }
+
+        @media (max-width: 750px) {
+            .control-group { min-width: 100px; }
+            .control-panel { flex-direction: column; }
+            .param-row { flex-wrap: wrap; }
+        }
+
+        footer {
+            font-size: 0.7rem;
+            text-align: center;
+            margin-top: 12px;
+            color: #7f9eb5;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div class="lab-container">
+        <div class="canvas-panel">
+          <a href="../index.html" class="back-btn">返回</a>
+            <canvas id="waveCanvas" width="800" height="600" style="width:100%; height:auto; max-width:800px; aspect-ratio:800/600"></canvas>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <label>🌊 波长 λ <span style="font-size:0.7rem;">(像素)</span><span id="lambdaVal" class="value-display">30.0</span></label>
+                <input type="range" id="lambdaSlider" min="12" max="85" step="1" value="32">
+                <div class="param-row">
+                    <label>📐 波源间距 d <span id="distanceVal" class="value-display">78</span></label>
+                    <input type="range" id="distanceSlider" min="28" max="220" step="1" value="78">
+                </div>
+            </div>
+            <div class="control-group">
+                <label>⚡ 频率 f <span style="font-size:0.7rem;">(Hz)</span><span id="freqVal" class="value-display">2.00</span></label>
+                <input type="range" id="freqSlider" min="0.8" max="5.2" step="0.02" value="2.2">
+                <label>🎛️ 振幅 A <span id="ampVal" class="value-display">0.85</span></label>
+                <input type="range" id="ampSlider" min="0.3" max="1.3" step="0.01" value="0.85">
+            </div>
+            <div class="control-group">
+                <label>🔄 相位差 Δφ <span id="phaseVal" class="value-display">0°</span></label>
+                <input type="range" id="phaseSlider" min="-180" max="180" step="5" value="0">
+                <div style="display: flex; gap: 8px; margin-top: 6px;">
+                    <button id="pauseBtn">⏸️ 暂停</button>
+                    <button id="resetBtn">⟳ 重置视图</button>
+                </div>
+            </div>
+            <div class="status-badge">
+                <span>💧 双相干波源干涉 | 动态水波模拟</span>
+                <span id="waveStatus">● 波动传播中</span>
+            </div>
+        </div>
+        <footer>
+            🧪 虚拟物理实验室 — 双点源水波干涉 | 可调波长/频率/间距/相位差 | 振幅随距离衰减 <span style="opacity:0.7">(真实波前叠加)</span>
+        </footer>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ----- 获取元素 -----
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        
+        // 固定分辨率 800x600 (兼顾性能与细腻度)
+        const W = 800;
+        const H = 600;
+        canvas.width = W;
+        canvas.height = H;
+        
+        // ----- 物理参数 -----
+        let wavelength = 32;       // 像素/周期
+        let waveNumber = 2 * Math.PI / wavelength;   // k
+        let frequency = 2.2;       // Hz (角频率 omega = 2PI * f)
+        let omega = 2 * Math.PI * frequency;
+        let amplitude = 0.85;       // 波源强度系数
+        let sourceDistance = 78;     // 双波源间距 (像素)
+        let phaseDiffDeg = 0;        // 相位差角度
+        let phaseDiffRad = 0;         // 弧度
+        
+        // 波源坐标 (动态计算)
+        let source1 = { x: W/2 - sourceDistance/2, y: H/2 };
+        let source2 = { x: W/2 + sourceDistance/2, y: H/2 };
+        
+        // 预计算距离场和衰减因子 (性能优化)
+        let dist1Arr = new Float32Array(W * H);
+        let dist2Arr = new Float32Array(W * H);
+        let atten1Arr = new Float32Array(W * H);   // 衰减系数 1/sqrt(r) 限制最大有效值
+        let atten2Arr = new Float32Array(W * H);
+        let needRebuildMap = true;   // 当间距改变, 波源位置改变时重建距离表
+        
+        // 动画控制
+        let animationId = null;
+        let startTime = null;
+        let isPaused = false;
+        let pausedElapsed = 0;        // 暂停时积累的时间偏移
+        let lastTimestamp = 0;
+        
+        // 界面元素绑定
+        const lambdaSlider = document.getElementById('lambdaSlider');
+        const lambdaVal = document.getElementById('lambdaVal');
+        const distanceSlider = document.getElementById('distanceSlider');
+        const distanceVal = document.getElementById('distanceVal');
+        const freqSlider = document.getElementById('freqSlider');
+        const freqVal = document.getElementById('freqVal');
+        const ampSlider = document.getElementById('ampSlider');
+        const ampVal = document.getElementById('ampVal');
+        const phaseSlider = document.getElementById('phaseSlider');
+        const phaseVal = document.getElementById('phaseVal');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const waveStatusSpan = document.getElementById('waveStatus');
+        
+        // ----- 辅助函数: 重建距离映射 (波源间距改变时调用)-----
+        function rebuildDistanceMaps() {
+            // 更新波源实际坐标
+            source1.x = W/2 - sourceDistance/2;
+            source1.y = H/2;
+            source2.x = W/2 + sourceDistance/2;
+            source2.y = H/2;
+            
+            // 边界限制防止波源跑出画布 (确保在合理范围)
+            source1.x = Math.min(Math.max(source1.x, 5), W-5);
+            source2.x = Math.min(Math.max(source2.x, 5), W-5);
+            
+            // 遍历所有像素点，计算到两波源的距离 + 衰减因子
+            for (let y = 0; y < H; y++) {
+                for (let x = 0; x < W; x++) {
+                    const idx = y * W + x;
+                    const dx1 = x - source1.x;
+                    const dy1 = y - source1.y;
+                    const dx2 = x - source2.x;
+                    const dy2 = y - source2.y;
+                    const r1 = Math.hypot(dx1, dy1);
+                    const r2 = Math.hypot(dx2, dy2);
+                    dist1Arr[idx] = r1;
+                    dist2Arr[idx] = r2;
+                    // 衰减因子: 振幅系数随距离减小, 模拟水波扩散, 避免分母为零, 最小距离限制1.2
+                    const safeR1 = Math.max(r1, 1.2);
+                    const safeR2 = Math.max(r2, 1.2);
+                    // 采用 1/sqrt(r) 型衰减更符合柱面波, 且中心不会过曝, 加入限制因子最大不超过2.0让条纹清晰
+                    let att1 = 1.0 / Math.sqrt(safeR1);
+                    let att2 = 1.0 / Math.sqrt(safeR2);
+                    // 限制最大衰减系数 (避免波源处太亮失去细节)
+                    att1 = Math.min(att1, 1.6);
+                    att2 = Math.min(att2, 1.6);
+                    atten1Arr[idx] = att1;
+                    atten2Arr[idx] = att2;
+                }
+            }
+            needRebuildMap = false;
+        }
+        
+        // 参数改变时更新相关物理量
+        function updatePhysicalParams() {
+            wavelength = parseFloat(lambdaSlider.value);
+            waveNumber = 2 * Math.PI / wavelength;
+            lambdaVal.innerText = wavelength.toFixed(1);
+            
+            frequency = parseFloat(freqSlider.value);
+            omega = 2 * Math.PI * frequency;
+            freqVal.innerText = frequency.toFixed(2);
+            
+            amplitude = parseFloat(ampSlider.value);
+            ampVal.innerText = amplitude.toFixed(2);
+            
+            const newDist = parseFloat(distanceSlider.value);
+            if (newDist !== sourceDistance) {
+                sourceDistance = newDist;
+                distanceVal.innerText = sourceDistance;
+                needRebuildMap = true;   // 间距变化，需要重建距离场
+            } else {
+                distanceVal.innerText = sourceDistance;
+            }
+            
+            phaseDiffDeg = parseFloat(phaseSlider.value);
+            phaseVal.innerText = phaseDiffDeg + "°";
+            phaseDiffRad = phaseDiffDeg * Math.PI / 180;
+        }
+        
+        // 响应所有滑块事件
+        function bindEvents() {
+            const sliders = [lambdaSlider, distanceSlider, freqSlider, ampSlider, phaseSlider];
+            sliders.forEach(slider => {
+                slider.addEventListener('input', () => {
+                    updatePhysicalParams();
+                    // 若距离改变重建映射立即触发一次重建 (下一帧绘制前执行)
+                    if (needRebuildMap) {
+                        rebuildDistanceMaps();
+                    }
+                    // 如果处于暂停状态，刷新一帧以显示新参数效果
+                    if (isPaused) {
+                        drawFrameFromTime(pausedElapsed);
+                    }
+                });
+            });
+            
+            pauseBtn.addEventListener('click', () => {
+                isPaused = !isPaused;
+                if (isPaused) {
+                    waveStatusSpan.innerHTML = '⏸ 已暂停 | 静态干涉图';
+                    pauseBtn.innerHTML = '▶️ 启动';
+                    if (animationId) {
+                        cancelAnimationFrame(animationId);
+                        animationId = null;
+                    }
+                } else {
+                    waveStatusSpan.innerHTML = '💧 波动传播中 ●';
+                    pauseBtn.innerHTML = '⏸️ 暂停';
+                    // 重启动画, 保留当前 pausedElapsed 时间偏移量
+                    startAnimation();
+                }
+            });
+            
+            resetBtn.addEventListener('click', () => {
+                // 重置为推荐演示参数: 波长32，间距78，频率2.2，振幅0.85，相位差0°
+                lambdaSlider.value = '32';
+                distanceSlider.value = '78';
+                freqSlider.value = '2.2';
+                ampSlider.value = '0.85';
+                phaseSlider.value = '0';
+                updatePhysicalParams();
+                needRebuildMap = true;
+                rebuildDistanceMaps();
+                // 重置时间累积量，让波动相位归零并重新开始运动 (使动画连续)
+                if (!isPaused) {
+                    // 重启动画时重置内部时间基准
+                    startTime = null;
+                    pausedElapsed = 0;
+                    if (animationId) cancelAnimationFrame(animationId);
+                    startAnimation();
+                } else {
+                    pausedElapsed = 0;
+                    drawFrameFromTime(0);
+                }
+                waveStatusSpan.innerHTML = isPaused ? '⏸ 已暂停 | 静态干涉图' : '💧 波动传播中 ●';
+                pauseBtn.innerHTML = isPaused ? '▶️ 启动' : '⏸️ 暂停';
+            });
+        }
+        
+        // 核心绘制: 给定模拟时间 t (秒), 计算全屏干涉场并绘制彩色映射
+        function drawFrameFromTime(currentTimeSec) {
+            if (needRebuildMap) {
+                rebuildDistanceMaps();
+            }
+            
+            // 准备 ImageData
+            const imageData = ctx.getImageData(0, 0, W, H);
+            const data = imageData.data;
+            
+            // 预计算相位偏移参数
+            const k = waveNumber;      // 波数
+            const w = omega;           // 角频率
+            const A = amplitude;
+            const phi2 = phaseDiffRad;   // 波源2相对波源1的相位差
+            
+            // 遍历每个像素，计算合振幅
+            for (let idx = 0; idx < W * H; idx++) {
+                const r1 = dist1Arr[idx];
+                const r2 = dist2Arr[idx];
+                // 衰减因子 (预先生成)
+                const att1 = atten1Arr[idx];
+                const att2 = atten2Arr[idx];
+                
+                // 波函数: A * att * cos(k * r - w * t + phase0)
+                // 波源1相位初相0，波源2相位初相 phi2
+                const phase1 = k * r1 - w * currentTimeSec;
+                const phase2 = k * r2 - w * currentTimeSec + phi2;
+                
+                let amp1 = A * att1 * Math.cos(phase1);
+                let amp2 = A * att2 * Math.cos(phase2);
+                let totalAmp = amp1 + amp2;
+                
+                // 映射颜色 - 增强视觉表现：正负振幅对应橙红色/冰蓝色系, 展示干涉相长/相消
+                // 范围大约在 [-1.5, 1.5] 之间，动态范围拉伸到RGB
+                // 归一化因子映射，钳制让条纹对比清晰
+                let tVal = totalAmp * 0.9;    // 轻微增益使色彩鲜明
+                tVal = Math.min(Math.max(tVal, -1.2), 1.2);
+                // 色彩方案: 从深蓝(负) -> 暗紫/黑(0) -> 亮橙黄(正)
+                let rCol, gCol, bCol;
+                if (tVal >= 0) {
+                    // 正振幅: 暖色系 (橙黄到亮白)
+                    rCol = 200 + Math.min(55, tVal * 100);
+                    gCol = 140 + Math.min(80, tVal * 90);
+                    bCol = 70 + Math.min(40, tVal * 60);
+                } else {
+                    // 负振幅: 冷色系 (深蓝到蓝紫)
+                    const pos = -tVal;  // 0-1.2
+                    rCol = 60 + Math.min(40, pos * 40);
+                    gCol = 90 + Math.min(70, pos * 80);
+                    bCol = 180 + Math.min(75, pos * 70);
+                }
+                // 限制0-255
+                data[idx*4] = Math.min(255, Math.max(0, Math.floor(rCol)));
+                data[idx*4+1] = Math.min(255, Math.max(0, Math.floor(gCol)));
+                data[idx*4+2] = Math.min(255, Math.max(0, Math.floor(bCol)));
+                data[idx*4+3] = 255;   // 完全不透明
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            
+            // 绘制波源标记 (两个脉冲源 + 小涟漪装饰)
+            ctx.save();
+            ctx.shadowBlur = 0;
+            // 波源1
+            ctx.beginPath();
+            ctx.arc(source1.x, source1.y, 9, 0, 2*Math.PI);
+            ctx.fillStyle = "#ffd966";
+            ctx.shadowColor = "rgba(0,0,0,0.6)";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(source1.x, source1.y, 4, 0, 2*Math.PI);
+            ctx.fillStyle = "#ffaa33";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(source1.x, source1.y, 12, 0, 2*Math.PI);
+            ctx.strokeStyle = "#fff5bf";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            
+            // 波源2
+            ctx.beginPath();
+            ctx.arc(source2.x, source2.y, 9, 0, 2*Math.PI);
+            ctx.fillStyle = "#ffd966";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(source2.x, source2.y, 4, 0, 2*Math.PI);
+            ctx.fillStyle = "#ffaa33";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(source2.x, source2.y, 12, 0, 2*Math.PI);
+            ctx.strokeStyle = "#fff5bf";
+            ctx.stroke();
+            
+            // 添加标签 S1 S2
+            ctx.font = "bold 14px 'Segoe UI'";
+            ctx.fillStyle = "#ffffffcc";
+            ctx.shadowBlur = 2;
+            ctx.fillText("S₁", source1.x-12, source1.y-6);
+            ctx.fillText("S₂", source2.x+4, source2.y-6);
+            
+            // 绘制示意连线
+            ctx.beginPath();
+            ctx.setLineDash([5, 8]);
+            ctx.strokeStyle = "#ffecaa88";
+            ctx.lineWidth = 1;
+            ctx.moveTo(source1.x, source1.y);
+            ctx.lineTo(source2.x, source2.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+            
+            // 额外绘制图例标注 (简洁)
+            ctx.font = "11px monospace";
+            ctx.fillStyle = "#b8e2ff";
+            ctx.shadowBlur = 0;
+            ctx.fillText("干涉相长(亮橙) | 相消(深蓝)", 15, 28);
+        }
+        
+        // 动画循环: 基于真实时间流逝计算相位时间
+        let animFrameRequest = null;
+        function startAnimation() {
+            if (animFrameRequest) cancelAnimationFrame(animFrameRequest);
+            let lastFrameTime = performance.now() / 1000;
+            let accumulatedTime = pausedElapsed;  // 如果从暂停恢复，保持偏移量
+            let baseTimeReference = null;
+            
+            function animate(nowMs) {
+                const nowSec = nowMs / 1000;
+                if (baseTimeReference === null) {
+                    baseTimeReference = nowSec - accumulatedTime;
+                }
+                let virtualTime = nowSec - baseTimeReference;
+                // 如果从未暂停过且没设startTime，确保为非负
+                if (isNaN(virtualTime)) virtualTime = 0;
+                // 限制时间范围不溢出但无影响
+                drawFrameFromTime(virtualTime);
+                
+                // 记录当前虚拟时间用于暂停恢复
+                if (!isPaused) {
+                    pausedElapsed = virtualTime;
+                }
+                animFrameRequest = requestAnimationFrame(animate);
+            }
+            
+            animFrameRequest = requestAnimationFrame(animate);
+            window.__animFrame = animFrameRequest;
+        }
+        
+        // 初始化距离表、参数、事件以及动画
+        function init() {
+            updatePhysicalParams();
+            rebuildDistanceMaps();   // 初次构建距离场
+            bindEvents();
+            // 初始非暂停，开始动画
+            isPaused = false;
+            pausedElapsed = 0;
+            startAnimation();
+            waveStatusSpan.innerHTML = '💧 波动传播中 ●';
+            pauseBtn.innerHTML = '⏸️ 暂停';
+        }
+        
+        // 窗口卸载时取消动画
+        window.addEventListener('beforeunload', ()=>{
+            if (animFrameRequest) cancelAnimationFrame(animFrameRequest);
+        });
+        
+        init();
+    })();
+</script>
+</body>
+</html>
