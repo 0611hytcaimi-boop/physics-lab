@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>双摆混沌运动 - 物理虚拟实验平台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--text:#e6edf3;--text2:#8b949e;--cyan:#58a6ff;--green:#3fb950;--orange:#d29922;--red:#f85149;--purple:#a371f7;--yellow:#e3b341}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.back-btn{color:var(--text2);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;transition:all .2s}
+.back-btn:hover{color:var(--text);background:var(--bg3)}
+.back-btn::before{content:'';display:inline-block;width:8px;height:8px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
+.header h1{font-size:18px;font-weight:600}.header .badge{font-size:12px;color:var(--text2);background:var(--bg3);padding:2px 10px;border-radius:10px;margin-left:auto}
+.main{display:flex;flex:1;overflow:hidden}
+.canvas-wrap{flex:1;position:relative;background:var(--bg)}
+#canvas{width:100%;height:100%;display:block}
+.panel{width:300px;background:var(--bg2);border-left:1px solid var(--border);padding:16px;overflow-y:auto;flex-shrink:0}
+.panel h2{font-size:14px;color:var(--text2);margin-bottom:12px;font-weight:500}
+.ctrl-group{margin-bottom:12px}
+.ctrl-group label{display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:4px}
+.ctrl-group label span{color:var(--cyan);font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:var(--bg3);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg2);cursor:pointer;transition:box-shadow .2s}
+input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 0 12px rgba(88,166,255,.4)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg2);cursor:pointer}
+.btn-row{display:flex;gap:8px;margin-bottom:16px}
+.btn{padding:8px 18px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit;flex:1}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{box-shadow:0 0 16px rgba(63,185,80,.35)}
+.btn-primary.active{background:var(--orange)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{box-shadow:0 0 16px rgba(248,81,73,.35)}.btn-secondary{background:var(--bg3);color:var(--text)}
+.readout{border-top:1px solid var(--border);padding-top:12px;margin-top:4px}
+.readout-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.readout-row .label{color:var(--text2)}
+.readout-row .value{font-family:'JetBrains Mono',monospace;font-weight:500}
+.val-cyan{color:var(--cyan)}.val-green{color:var(--green)}.val-orange{color:var(--orange)}.val-red{color:var(--red)}.val-purple{color:var(--purple)}
+.toggle-wrap{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;inset:0;background:var(--bg3);border-radius:11px;cursor:pointer;transition:background .2s}
+.toggle .slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:var(--text2);border-radius:50%;transition:all .2s}
+.toggle input:checked+.slider{background:var(--cyan)}
+.toggle input:checked+.slider::before{background:#fff;transform:translateX(18px)}
+.toggle-label{font-size:13px;color:var(--text2)}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-track{background:transparent}
+.panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+@media(max-width:768px){.main{flex-direction:column}.panel{width:100%;max-height:40vh;border-left:none;border-top:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="../index.html" class="back-btn">返回</a>
+  <h1>双摆混沌运动</h1>
+  <span class="badge">Double Pendulum</span>
+</div>
+<div class="main">
+  <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+  <div class="panel">
+    <h2>参数控制</h2>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="playBtn">▶ 运行</button>
+      <button class="btn btn-danger" id="resetBtn">↺ 重置</button>
+    </div>
+    <div class="ctrl-group">
+      <label>摆1 角度 θ₁ <span id="th1Val">120</span>°</label>
+      <input type="range" id="th1Slider" min="10" max="180" step="1" value="120">
+    </div>
+    <div class="ctrl-group">
+      <label>摆2 角度 θ₂ <span id="th2Val">90</span>°</label>
+      <input type="range" id="th2Slider" min="-180" max="180" step="1" value="90">
+    </div>
+    <div class="ctrl-group">
+      <label>摆长 L₁ <span id="L1Val">1.0</span> m</label>
+      <input type="range" id="L1Slider" min="0.5" max="2.0" step="0.1" value="1.0">
+    </div>
+    <div class="ctrl-group">
+      <label>摆长 L₂ <span id="L2Val">1.0</span> m</label>
+      <input type="range" id="L2Slider" min="0.5" max="2.0" step="0.1" value="1.0">
+    </div>
+    <div class="ctrl-group">
+      <label>质量 m₁ <span id="m1Val">1.0</span> kg</label>
+      <input type="range" id="m1Slider" min="0.5" max="5" step="0.1" value="1.0">
+    </div>
+    <div class="ctrl-group">
+      <label>质量 m₂ <span id="m2Val">1.0</span> kg</label>
+      <input type="range" id="m2Slider" min="0.5" max="5" step="0.1" value="1.0">
+    </div>
+    <div class="ctrl-group">
+      <label>模拟速度 <span id="speedVal">1.0</span>x</label>
+      <input type="range" id="speedSlider" min="0.1" max="5" step="0.1" value="1.0">
+    </div>
+    <div class="readout">
+      <h2>实时数据</h2>
+      <div class="readout-row"><span class="label">动能 E<sub>k</sub></span><span class="value val-cyan" id="rKE">0.00 J</span></div>
+      <div class="readout-row"><span class="label">势能 E<sub>p</sub></span><span class="value val-green" id="rPE">0.00 J</span></div>
+      <div class="readout-row"><span class="label">总能量 E</span><span class="value val-orange" id="rTE">0.00 J</span></div>
+      <div class="readout-row"><span class="label">时间</span><span class="value" id="rTime" style="color:var(--text)">0.00 s</span></div>
+    </div>
+  </div>
+</div>
+<script>
+const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
+const playBtn=document.getElementById('playBtn'),resetBtn=document.getElementById('resetBtn');
+const th1Slider=document.getElementById('th1Slider'),th2Slider=document.getElementById('th2Slider');
+const L1Slider=document.getElementById('L1Slider'),L2Slider=document.getElementById('L2Slider');
+const m1Slider=document.getElementById('m1Slider'),m2Slider=document.getElementById('m2Slider');
+const speedSlider=document.getElementById('speedSlider');
+const rKE=document.getElementById('rKE'),rPE=document.getElementById('rPE'),rTE=document.getElementById('rTE'),rTime=document.getElementById('rTime');
+const th1Val=document.getElementById('th1Val'),th2Val=document.getElementById('th2Val');
+const L1Val=document.getElementById('L1Val'),L2Val=document.getElementById('L2Val');
+const m1Val=document.getElementById('m1Val'),m2Val=document.getElementById('m2Val'),speedVal=document.getElementById('speedVal');
+
+const P={th1:120,th2:90,L1:1,L2:1,m1:1,m2:1,speed:1};
+let S={th1:0,th2:0,om1:0,om2:0,time:0,running:false};
+const trail=[];
+const MAX_TRAIL=2000;
+
+let W,H,cx,cy,scale=120;
+
+function resize(){
+  const r=canvas.parentElement.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  W=r.width;H=r.height;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  cx=W/2;cy=H*0.35;scale=Math.min(W,H)*0.17;
+}
+window.addEventListener('resize',resize);
+
+// Double pendulum derivatives (from Lagrangian)
+function derivatives(s){
+  const [th1,th2,om1,om2]=s;
+  const L1=P.L1,L2=P.L2,m1=P.m1,m2=P.m2,g=9.81;
+  const delta=th1-th2;
+  const denom=2*m1+m2-m2*Math.cos(2*delta);
+  const C=Math.cos(delta),S=Math.sin(delta);
+  const a1=(-g*(2*m1+m2)*Math.sin(th1)-m2*g*Math.sin(th1-2*th2)-2*S*m2*(om2*om2*L2+om1*om1*L1*C))/(L1*denom);
+  const a2=(2*S*(om1*om1*L1*(m1+m2)+g*(m1+m2)*Math.cos(th1)+om2*om2*L2*m2*C))/(L2*denom);
+  return [om1,om2,a1,a2];
+}
+
+function rk4Step(s,dt){
+  const k1=derivatives(s);
+  const s2=s.map((v,i)=>v+0.5*dt*k1[i]);
+  const k2=derivatives(s2);
+  const s3=s.map((v,i)=>v+0.5*dt*k2[i]);
+  const k3=derivatives(s3);
+  const s4=s.map((v,i)=>v+dt*k3[i]);
+  const k4=derivatives(s4);
+  return s.map((v,i)=>v+dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));
+}
+
+function update(dt){
+  if(!S.running)return;
+  const state=[S.th1,S.th2,S.om1,S.om2];
+  const next=rk4Step(state,dt);
+  [S.th1,S.th2,S.om1,S.om2]=next;
+  S.time+=dt;
+  // Trail (tip of second pendulum)
+  const x1=cx+P.L1*scale*Math.sin(S.th1);
+  const y1=cy+P.L1*scale*Math.cos(S.th1);
+  const x2=x1+P.L2*scale*Math.sin(S.th2);
+  const y2=y1+P.L2*scale*Math.cos(S.th2);
+  trail.push({x:x2,y:y2});
+  if(trail.length>MAX_TRAIL)trail.shift();
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(48,54,61,0.15)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  // Trail (fade from red to yellow to green)
+  if(trail.length>2){
+    for(let i=2;i<trail.length;i++){
+      const t=i/trail.length;
+      const alpha=Math.min(0.7,t*0.7);
+      const r=Math.round(88+167*t);
+      const g=Math.round(166-166*t);
+      const b=Math.round(255-255*t);
+      ctx.strokeStyle=`rgba(${r},${g},${b},${alpha})`;
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(trail[i-1].x,trail[i-1].y);
+      ctx.lineTo(trail[i].x,trail[i].y);
+      ctx.stroke();
+    }
+  }
+  // Pendulum positions
+  const x1=cx+P.L1*scale*Math.sin(S.th1);
+  const y1=cy+P.L1*scale*Math.cos(S.th1);
+  const x2=x1+P.L2*scale*Math.sin(S.th2);
+  const y2=y1+P.L2*scale*Math.cos(S.th2);
+  // Arm 1
+  ctx.strokeStyle='rgba(230,237,243,0.7)';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x1,y1);ctx.stroke();
+  // Arm 2
+  ctx.strokeStyle='rgba(230,237,243,0.5)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  // Pivot
+  ctx.fillStyle='#8b949e';ctx.beginPath();ctx.arc(cx,cy,6,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#21262d';ctx.fillRect(cx-30,cy-10,60,8);
+  // Joint 1
+  ctx.fillStyle='rgba(163,113,247,0.8)';ctx.beginPath();ctx.arc(x1,y1,6,0,Math.PI*2);ctx.fill();
+  // Bob 2
+  const r2=Math.max(6,Math.min(16,8+P.m2));
+  let g2=ctx.createRadialGradient(x2-r2*.3,y2-r2*.3,0,x2,y2,r2);
+  g2.addColorStop(0,'#f85149');g2.addColorStop(1,'#da3633');
+  ctx.fillStyle=g2;ctx.beginPath();ctx.arc(x2,y2,r2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.font='9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('m₂',x2,y2);
+  // Labels
+  ctx.fillStyle='rgba(139,148,158,0.3)';ctx.font='11px sans-serif';ctx.textAlign='left';
+  ctx.fillText('L₁='+P.L1.toFixed(1)+'m  L₂='+P.L2.toFixed(1)+'m',12,H-12);
+  // Energy
+  const m1=P.m1,m2=P.m2,g=9.81;
+  const v1x=P.L1*S.om1*Math.cos(S.th1),v1y=-P.L1*S.om1*Math.sin(S.th1);
+  const v2x=v1x+P.L2*S.om2*Math.cos(S.th2),v2y=v1y-P.L2*S.om2*Math.sin(S.th2);
+  const KE=0.5*m1*(v1x*v1x+v1y*v1y)+0.5*m2*(v2x*v2x+v2y*v2y);
+  const h1=P.L1*(1-Math.cos(S.th1));
+  const h2=h1+P.L2*(1-Math.cos(S.th2));
+  const PE=m1*g*h1+m2*g*h2;
+  rKE.textContent=KE.toFixed(2)+' J';
+  rPE.textContent=PE.toFixed(2)+' J';
+  rTE.textContent=(KE+PE).toFixed(2)+' J';
+  rTime.textContent=S.time.toFixed(2)+' s';
+}
+
+function resetSim(){
+  S.th1=P.th1*Math.PI/180;S.th2=P.th2*Math.PI/180;
+  S.om1=0;S.om2=0;S.time=0;
+  trail.length=0;
+}
+function togglePlay(){
+  S.running=!S.running;
+  playBtn.textContent=S.running?'⏸ 暂停':'▶ 运行';
+  playBtn.classList.toggle('active',S.running);
+}
+playBtn.addEventListener('click',togglePlay);
+resetBtn.addEventListener('click',resetSim);
+th1Slider.addEventListener('input',()=>{P.th1=+th1Slider.value;th1Val.textContent=P.th1;resetSim()});
+th2Slider.addEventListener('input',()=>{P.th2=+th2Slider.value;th2Val.textContent=P.th2;resetSim()});
+L1Slider.addEventListener('input',()=>{P.L1=+L1Slider.value;L1Val.textContent=P.L1.toFixed(1);resetSim()});
+L2Slider.addEventListener('input',()=>{P.L2=+L2Slider.value;L2Val.textContent=P.L2.toFixed(1);resetSim()});
+m1Slider.addEventListener('input',()=>{P.m1=+m1Slider.value;m1Val.textContent=P.m1.toFixed(1);resetSim()});
+m2Slider.addEventListener('input',()=>{P.m2=+m2Slider.value;m2Val.textContent=P.m2.toFixed(1);resetSim()});
+speedSlider.addEventListener('input',()=>{P.speed=+speedSlider.value;speedVal.textContent=P.speed.toFixed(1)});
+document.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Space'){e.preventDefault();togglePlay()}if(e.key==='r'||e.key==='R')resetSim()});
+
+let lastTime=0;
+const FIXED_DT=1/120;
+function loop(t){
+  requestAnimationFrame(loop);
+  if(lastTime===0)lastTime=t;
+  let ft=(t-lastTime)/1000;lastTime=t;
+  if(ft>.1)ft=.1;
+  const dt=FIXED_DT,steps=Math.ceil(ft*P.speed/dt);
+  for(let i=0;i<steps;i++)update(dt);
+  draw();
+}
+resize();resetSim();loop(0);
+</script>
+</body>
+</html>
