@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>波的干涉与衍射 - 物理虚拟实验平台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--text:#e6edf3;--text2:#8b949e;--cyan:#58a6ff;--green:#3fb950;--orange:#d29922;--red:#f85149;--purple:#a371f7;--yellow:#e3b341}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.back-btn{color:var(--text2);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;transition:all .2s}
+.back-btn:hover{color:var(--text);background:var(--bg3)}
+.back-btn::before{content:'';display:inline-block;width:8px;height:8px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
+.header h1{font-size:18px;font-weight:600}.header .badge{font-size:12px;color:var(--text2);background:var(--bg3);padding:2px 10px;border-radius:10px;margin-left:auto}
+.main{display:flex;flex:1;overflow:hidden}
+.canvas-wrap{flex:1;position:relative;background:var(--bg)}
+#canvas{width:100%;height:100%;display:block}
+.panel{width:300px;background:var(--bg2);border-left:1px solid var(--border);padding:16px;overflow-y:auto;flex-shrink:0}
+.panel h2{font-size:14px;color:var(--text2);margin-bottom:12px;font-weight:500}
+.ctrl-group{margin-bottom:12px}
+.ctrl-group label{display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:4px}
+.ctrl-group label span{color:var(--cyan);font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:var(--bg3);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg2);cursor:pointer;transition:box-shadow .2s}
+input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 0 12px rgba(88,166,255,.4)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg2);cursor:pointer}
+.btn-row{display:flex;gap:8px;margin-bottom:16px}
+.btn{padding:8px 18px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit;flex:1}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{box-shadow:0 0 16px rgba(63,185,80,.35)}
+.btn-secondary{background:var(--bg3);color:var(--text)}.btn-secondary.active{background:var(--cyan);color:#fff}
+.readout{border-top:1px solid var(--border);padding-top:12px;margin-top:4px}
+.readout-row{display:flex;justify-content:space-between;font-size:13px;padding:2px 0}
+.readout-row .label{color:var(--text2)}
+.readout-row .value{font-family:'JetBrains Mono',monospace;font-weight:500}
+.val-cyan{color:var(--cyan)}.val-green{color:var(--green)}.val-orange{color:var(--orange)}.val-purple{color:var(--purple)}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-track{background:transparent}
+.panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+@media(max-width:768px){.main{flex-direction:column}.panel{width:100%;max-height:40vh;border-left:none;border-top:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="../index.html" class="back-btn">返回</a>
+  <h1>波的干涉与衍射</h1>
+  <span class="badge">Interference & Diffraction</span>
+</div>
+<div class="main">
+  <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+  <div class="panel">
+    <h2>参数控制</h2>
+    <div class="btn-row">
+      <button class="btn btn-secondary active" id="modeDoubleBtn">🔘 双缝干涉</button>
+      <button class="btn btn-secondary" id="modeSingleBtn">〰️ 单缝衍射</button>
+    </div>
+    <div class="ctrl-group">
+      <label>波长 λ <span id="wlVal">500</span> nm</label>
+      <input type="range" id="wlSlider" min="200" max="800" step="10" value="500">
+    </div>
+    <div class="ctrl-group">
+      <label>缝宽 a <span id="slitWVal">0.5</span> μm</label>
+      <input type="range" id="slitWSlider" min="0.1" max="2.0" step="0.1" value="0.5">
+    </div>
+    <div class="ctrl-group" id="slitDistGroup">
+      <label>缝距 d <span id="slitDVal">2.0</span> μm</label>
+      <input type="range" id="slitDSlider" min="0.5" max="5.0" step="0.1" value="2.0">
+    </div>
+    <div class="readout">
+      <h2>计算结果</h2>
+      <div class="readout-row"><span class="label">中央极大</span><span class="value val-cyan" id="rCentral">0.0 mm</span></div>
+      <div class="readout-row"><span class="label">一级极大</span><span class="value val-green" id="rMax1">— mm</span></div>
+      <div class="readout-row"><span class="label">一级极小</span><span class="value val-orange" id="rMin1">— mm</span></div>
+    </div>
+  </div>
+</div>
+<script>
+const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
+const modeDoubleBtn=document.getElementById('modeDoubleBtn'),modeSingleBtn=document.getElementById('modeSingleBtn');
+const wlSlider=document.getElementById('wlSlider'),slitWSlider=document.getElementById('slitWSlider'),slitDSlider=document.getElementById('slitDSlider');
+const rCentral=document.getElementById('rCentral'),rMax1=document.getElementById('rMax1'),rMin1=document.getElementById('rMin1');
+const wlVal=document.getElementById('wlVal'),slitWVal=document.getElementById('slitWVal'),slitDVal=document.getElementById('slitDVal');
+
+let isDoubleSlit=true;
+let W,H;
+const L=1000; // screen distance (mm)
+const SCREEN_PTS=400;
+
+modeDoubleBtn.addEventListener('click',()=>{
+  isDoubleSlit=true;
+  modeDoubleBtn.classList.add('active');modeSingleBtn.classList.remove('active');
+});
+modeSingleBtn.addEventListener('click',()=>{
+  isDoubleSlit=false;modeSingleBtn.classList.add('active');
+  modeDoubleBtn.classList.remove('active');
+});
+
+function resize(){
+  const r=canvas.parentElement.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  W=r.width;H=r.height;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize',resize);
+
+// Intensity calculation
+function calcIntensity(theta,lambda_um,a_um,d_um){
+  const lambda_m=lambda_um*1e-9;
+  const a_m=a_um*1e-6;
+  const d_m=d_um*1e-6;
+  const k=Math.PI*a_m*Math.sin(theta)/lambda_m;
+  const beta=Math.PI*d_m*Math.sin(theta)/lambda_m;
+  // Single-slit envelope: sinc²(π a sinθ / λ)
+  const sinc=Math.abs(k)<1e-10?1:Math.sin(k)/k;
+  const singleSlit=sinc*sinc;
+  // Double-slit: single-slit envelope × cos²(π d sinθ / λ) × 4
+  const doubleSlit=isDoubleSlit?singleSlit*Math.cos(beta)*Math.cos(beta)*4:singleSlit;
+  return doubleSlit;
+}
+
+function drawWaves(cx,cy,screenX,screenH,lambda_display){
+  const dist=screenX-cx;
+  const t=performance.now()/1000;
+  const speed=60; // px/s
+  const phase=t*speed%(lambda_display*3);
+  // Draw multiple wavefronts
+  for(let r=phase;r<dist;r+=lambda_display){
+    const alpha=0.04+0.06*(1-r/dist);
+    const x=cx+r;
+    if(x>screenX)break;
+    ctx.strokeStyle=`rgba(88,166,255,${alpha})`;
+    ctx.lineWidth=1;
+    // Determine slit positions in pixels
+    const slitPositions=getSlitPositions(cx,cy);
+    for(const sy of slitPositions){
+      const radius=Math.max(4,r*0.3);
+      ctx.beginPath();ctx.arc(x,sy,radius,0,Math.PI*2);ctx.stroke();
+    }
+  }
+}
+
+function getSlitPositions(cx,cy){
+  const a=+slitWSlider.value;
+  const d=+slitDSlider.value;
+  if(isDoubleSlit){
+    const halfD=Math.min(80,d*15);
+    return [cy-halfD,cy+halfD];
+  }else{
+    return [cy];
+  }
+}
+
+function drawScreenPattern(cx,cy,screenX,screenH,lambda_um,a_um,d_um){
+  const screenDist=screenX-cx;
+  const screenTop=cy-screenH/2;
+  // Precompute intensity over screen points
+  const pts=[];
+  let maxI=0;
+  for(let i=0;i<SCREEN_PTS;i++){
+    const y=screenTop+i*(screenH/SCREEN_PTS);
+    const dy=y-cy;
+    const theta=Math.atan2(dy,screenDist);
+    let I=calcIntensity(theta,lambda_um,a_um,d_um);
+    if(I>maxI)maxI=I;
+    pts.push({y,I});
+  }
+  if(maxI<0.001)maxI=1;
+  // Draw intensity as vertical glow on screen
+  const screenX_pos=screenX;
+  for(const p of pts){
+    const norm=p.I/maxI;
+    // Glow on screen surface
+    const glowW=Math.max(1,norm*12);
+    const alpha=0.15+0.85*norm;
+    ctx.fillStyle=`rgba(88,166,255,${alpha})`;
+    ctx.fillRect(screenX_pos-2,p.y-1,glowW+2,2);
+    // Outer glow
+    if(norm>0.05){
+      ctx.fillStyle=`rgba(88,166,255,${alpha*0.3})`;
+      ctx.fillRect(screenX_pos-4,p.y-2,glowW+4,4);
+    }
+  }
+  // Also draw the intensity as a graph between barrier and screen
+  const graphTop=10;
+  const graphH=Math.min(screenH/2,120);
+  const graphX=cx+20;
+  const graphW=screenX-cx-50;
+  // Background for graph
+  ctx.fillStyle='rgba(22,27,34,0.85)';
+  roundRect(ctx,graphX,graphTop,graphW,graphH,6);
+  ctx.strokeStyle='rgba(48,54,61,0.5)';ctx.lineWidth=1;
+  roundRect(ctx,graphX,graphTop,graphW,graphH,6,true);
+  // Title
+  ctx.fillStyle='rgba(139,148,158,0.5)';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('强度分布 I(θ)',graphX+graphW/2,graphTop-2);
+  // Axis
+  ctx.strokeStyle='rgba(139,148,158,0.3)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(graphX,graphTop+graphH);ctx.lineTo(graphX+graphW,graphTop+graphH);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(graphX,graphTop);ctx.lineTo(graphX,graphTop+graphH);ctx.stroke();
+  // Plot I(θ)
+  const graphMaxI=Math.max(maxI,0.01);
+  ctx.strokeStyle='#58a6ff';ctx.lineWidth=1.5;
+  ctx.beginPath();
+  let first=true;
+  for(let i=0;i<SCREEN_PTS;i++){
+    const y=screenTop+i*(screenH/SCREEN_PTS);
+    const dy=y-cy;
+    const theta=Math.atan2(dy,screenDist);
+    let I=calcIntensity(theta,lambda_um,a_um,d_um);
+    // Map screen y to graph x range (angle-based)
+    const frac=(i/SCREEN_PTS);
+    const px=graphX+frac*graphW;
+    const py=graphTop+graphH-(I/graphMaxI)*graphH*0.9;
+    if(first){ctx.moveTo(px,py);first=false}
+    else ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+
+  // Label peaks
+  ctx.font='9px sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+  const peakPts=[];
+  for(let i=3;i<SCREEN_PTS-3;i++){
+    const y0=screenTop+i*(screenH/SCREEN_PTS);
+    const y1=screenTop+(i-1)*(screenH/SCREEN_PTS);
+    const y2=screenTop+(i+1)*(screenH/SCREEN_PTS);
+    const dy0=y0-cy,dy1=y1-cy,dy2=y2-cy;
+    const theta0=Math.atan2(dy0,screenDist);
+    const theta1=Math.atan2(dy1,screenDist);
+    const theta2=Math.atan2(dy2,screenDist);
+    const I0=calcIntensity(theta0,lambda_um,a_um,d_um);
+    const I1=calcIntensity(theta1,lambda_um,a_um,d_um);
+    const I2=calcIntensity(theta2,lambda_um,a_um,d_um);
+    if(I0>I1&&I0>I2&&I0>maxI*0.1){
+      peakPts.push({y:y0,I:I0,theta:theta0});
+    }
+  }
+  // Show peak count
+  ctx.fillStyle='rgba(139,148,158,0.4)';ctx.font='10px sans-serif';ctx.textAlign='right';ctx.textBaseline='bottom';
+  ctx.fillText('波峰数: '+peakPts.length,graphX+graphW,graphTop+graphH-2);
+}
+
+function roundRect(c,x,y,w,h,r,strokeOnly){
+  c.beginPath();c.roundRect(x,y,w,h,r);
+  strokeOnly?c.stroke():c.fill();
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0d1117';ctx.fillRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(48,54,61,0.2)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+
+  const lambda_um=+wlSlider.value;       // nm
+  const a_um=+slitWSlider.value;         // um
+  const d_um=+slitDSlider.value;         // um
+
+  const cx=W*0.25;       // barrier x
+  const cy=H/2;
+  const screenX=W*0.82;  // screen x
+  const screenH=H*0.75;
+  const screenTop=cy-screenH/2;
+
+  // --- Draw wave source (left side) ---
+  ctx.fillStyle='rgba(88,166,255,0.15)';
+  ctx.beginPath();ctx.arc(cx-60,cy,40,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(88,166,255,0.3)';
+  ctx.beginPath();ctx.arc(cx-60,cy,15,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='var(--cyan)';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('波源',cx-60,cy-55);
+
+  // --- Draw propagating waves (between source and barrier) ---
+  const srcX=cx-60;
+  ctx.strokeStyle='rgba(88,166,255,0.12)';ctx.lineWidth=1;
+  const waveR=Math.min(lambda_um*0.06+8,25);
+  for(let r=waveR;r<cx-srcX;r+=waveR){
+    ctx.beginPath();ctx.arc(srcX,cy,r,0,Math.PI*2);ctx.stroke();
+  }
+
+  // --- Barrier ---
+  const barrierH=Math.min(screenH+60,H-60);
+  const barrierTop=cy-barrierH/2;
+  const barrierBot=cy+barrierH/2;
+
+  // Slit parameters in pixels
+  const slitH=Math.max(10,Math.min(60,lambda_um*0.06+12));
+  const halfD_px=isDoubleSlit?Math.min(100,d_um*18):0;
+  const halfA_px=Math.min(50,a_um*25);
+
+  // Draw barrier (background)
+  ctx.fillStyle='#21262d';
+  ctx.fillRect(cx-4,barrierTop,8,barrierH);
+  ctx.fillStyle='#30363d';
+  ctx.fillRect(cx-2,barrierTop,4,barrierH);
+
+  // Clear slits
+  if(isDoubleSlit){
+    // Two slits
+    ctx.clearRect(cx-5,cy-halfD_px-slitH/2,10,slitH);
+    ctx.clearRect(cx-5,cy+halfD_px-slitH/2,10,slitH);
+    // Highlight slits
+    ctx.fillStyle='rgba(88,166,255,0.25)';
+    ctx.fillRect(cx-3,cy-halfD_px-slitH/2,6,slitH);
+    ctx.fillRect(cx-3,cy+halfD_px-slitH/2,6,slitH);
+    // Annotate
+    ctx.fillStyle='rgba(139,148,158,0.4)';ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText('d='+d_um.toFixed(1)+'μm',cx-14,cy);
+    ctx.fillText('↕',cx-14,cy-6);
+  }else{
+    // Single slit with width a
+    ctx.clearRect(cx-5,cy-halfA_px,10,2*halfA_px);
+    ctx.fillStyle='rgba(88,166,255,0.25)';
+    ctx.fillRect(cx-3,cy-halfA_px,6,2*halfA_px);
+    // Annotate
+    ctx.fillStyle='rgba(139,148,158,0.4)';ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText('a='+a_um.toFixed(1)+'μm',cx-14,cy+2);
+  }
+
+  // --- Draw waves propagating from slits to screen ---
+  const lambda_disp=Math.max(15,Math.min(50,lambda_um*0.06+8));
+  drawWaves(cx,cy,screenX,screenH,lambda_disp);
+
+  // --- Screen ---
+  ctx.fillStyle='#161b22';
+  ctx.fillRect(screenX-4,screenTop,8,screenH);
+  ctx.strokeStyle='var(--border)';ctx.lineWidth=1;
+  ctx.strokeRect(screenX-4,screenTop,8,screenH);
+
+  // --- Draw intensity pattern ON screen ---
+  drawScreenPattern(cx,cy,screenX,screenH,lambda_um,a_um,d_um);
+
+  // Labels
+  ctx.fillStyle='rgba(139,148,158,0.4)';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+  ctx.fillText('波源',cx-60,H-12);
+  ctx.fillText('双缝 / 单缝',cx,H-12);
+  ctx.fillText('观察屏',screenX,H-12);
+
+  // --- Theoretical calculations ---
+  const lambda_m=lambda_um*1e-9;
+  const d_m=d_um*1e-6;
+  const a_m=a_um*1e-6;
+  const L_m=L/1000; // 1m
+  rCentral.textContent='0.0 mm';
+  if(isDoubleSlit&&d_m>0){
+    // Double-slit: y = mλL/d, first max at m=1
+    const y1=lambda_m*L_m/d_m*1000;
+    rMax1.textContent=y1.toFixed(2)+' mm';
+    // Single-slit envelope minima: y = mλL/a
+    const yMin=lambda_m*L_m/a_m*1000;
+    rMin1.textContent=yMin.toFixed(2)+' mm (包络)';
+  }else if(!isDoubleSlit&&a_m>0){
+    // Single-slit: first minimum at y = λL/a
+    const y1=lambda_m*L_m/a_m*1000;
+    rMin1.textContent=y1.toFixed(2)+' mm';
+    rMax1.textContent='— mm';
+  }else{
+    rMax1.textContent='— mm';
+    rMin1.textContent='— mm';
+  }
+}
+
+// Input bindings
+wlSlider.addEventListener('input',()=>wlVal.textContent=(+wlSlider.value).toFixed(0));
+slitWSlider.addEventListener('input',()=>slitWVal.textContent=(+slitWSlider.value).toFixed(1));
+slitDSlider.addEventListener('input',()=>slitDVal.textContent=(+slitDSlider.value).toFixed(1));
+
+// roundRect polyfill
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    if(r>w/2)r=w/2;if(r>h/2)r=h/2;
+    this.moveTo(x+r,y);this.lineTo(x+w-r,y);
+    this.quadraticCurveTo(x+w,y,x+w,y+r);
+    this.lineTo(x+w,y+h-r);
+    this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    this.lineTo(x+r,y+h);this.quadraticCurveTo(x,y+h,x,y+h-r);
+    this.lineTo(x,y+r);this.quadraticCurveTo(x,y,x+r,y);
+    this.closePath();return this;
+  };
+}
+
+function loop(){requestAnimationFrame(loop);draw()}
+resize();loop(0);
+</script>
+</body>
+</html>
