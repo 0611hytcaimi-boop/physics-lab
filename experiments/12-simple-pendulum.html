@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>单摆运动 - 物理虚拟实验平台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;
+  --border:#30363d;--text:#e6edf3;--text2:#8b949e;
+  --cyan:#58a6ff;--green:#3fb950;--orange:#d29922;
+  --red:#f85149;--purple:#a371f7;--yellow:#e3b341;
+  --pink:#db61a2;
+}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.back-btn{color:var(--text2);text-decoration:none;font-size:14px;display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;transition:all .2s}
+.back-btn:hover{color:var(--text);background:var(--bg3)}
+.back-btn::before{content:'';display:inline-block;width:8px;height:8px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
+.header h1{font-size:18px;font-weight:600}
+.header .badge{font-size:12px;color:var(--text2);background:var(--bg3);padding:2px 10px;border-radius:10px;margin-left:auto}
+.main{display:flex;flex:1;overflow:hidden}
+.canvas-wrap{flex:1;position:relative;background:var(--bg)}
+#canvas{width:100%;height:100%;display:block}
+.panel{width:300px;background:var(--bg2);border-left:1px solid var(--border);padding:16px;overflow-y:auto;flex-shrink:0}
+.panel h2{font-size:14px;color:var(--text2);margin-bottom:12px;font-weight:500}
+.ctrl-group{margin-bottom:16px}
+.ctrl-group label{display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:4px}
+.ctrl-group label span{color:var(--cyan);font-weight:500;font-family:'JetBrains Mono',monospace}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:var(--bg3);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg2);cursor:pointer;transition:box-shadow .2s}
+input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 0 12px rgba(88,166,255,.4)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg2);cursor:pointer}
+.btn-row{display:flex;gap:8px;margin-bottom:16px}
+.btn{padding:8px 18px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;font-family:inherit;flex:1}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{box-shadow:0 0 16px rgba(63,185,80,.35)}
+.btn-primary.active{background:var(--orange)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover{box-shadow:0 0 16px rgba(248,81,73,.35)}
+.readout{border-top:1px solid var(--border);padding-top:12px;margin-top:4px}
+.readout-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.readout-row .label{color:var(--text2)}
+.readout-row .value{font-family:'JetBrains Mono',monospace;font-weight:500}
+.val-cyan{color:var(--cyan)}.val-green{color:var(--green)}.val-orange{color:var(--orange)}
+.val-red{color:var(--red)}.val-purple{color:var(--purple)}.val-yellow{color:var(--yellow)}
+.toggle-wrap{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;inset:0;background:var(--bg3);border-radius:11px;cursor:pointer;transition:background .2s}
+.toggle .slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:var(--text2);border-radius:50%;transition:all .2s}
+.toggle input:checked+.slider{background:var(--cyan)}
+.toggle input:checked+.slider::before{background:#fff;transform:translateX(18px)}
+.toggle-label{font-size:13px;color:var(--text2)}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-track{background:transparent}
+.panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+@media(max-width:768px){
+  .main{flex-direction:column}
+  .panel{width:100%;max-height:40vh;border-left:none;border-top:1px solid var(--border)}
+  .header h1{font-size:15px}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="../index.html" class="back-btn">返回</a>
+  <h1>单摆运动</h1>
+  <span class="badge">Simple Pendulum</span>
+</div>
+<div class="main">
+  <div class="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+  <div class="panel">
+    <h2>参数控制</h2>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="playBtn">▶ 运行</button>
+      <button class="btn btn-danger" id="resetBtn">↺ 重置</button>
+    </div>
+    <div class="ctrl-group">
+      <label>摆长 (L) <span id="lenVal">2.0</span> m</label>
+      <input type="range" id="lenSlider" min="0.5" max="3.5" step="0.1" value="2.0">
+    </div>
+    <div class="ctrl-group">
+      <label>初始角度 (θ₀) <span id="angVal">45</span>°</label>
+      <input type="range" id="angSlider" min="5" max="90" step="1" value="45" class="">
+    </div>
+    <div class="ctrl-group">
+      <label>重力加速度 (g) <span id="gravVal">9.81</span> m/s²</label>
+      <input type="range" id="gravSlider" min="1" max="20" step="0.1" value="9.81">
+    </div>
+    <div class="ctrl-group">
+      <label>阻尼系数 <span id="dampVal">0.00</span></label>
+      <input type="range" id="dampSlider" min="0" max="0.5" step="0.01" value="0">
+    </div>
+    <div class="ctrl-group">
+      <label>模拟速度 <span id="speedVal">1.0</span>x</label>
+      <input type="range" id="speedSlider" min="0.1" max="5" step="0.1" value="1.0">
+    </div>
+    <div class="toggle-wrap">
+      <label class="toggle"><input type="checkbox" id="showApprox"><span class="slider"></span></label>
+      <span class="toggle-label">显示小角近似</span>
+    </div>
+    <div class="toggle-wrap">
+      <label class="toggle"><input type="checkbox" id="showEnergy" checked><span class="slider"></span></label>
+      <span class="toggle-label">显示能量</span>
+    </div>
+    <div class="toggle-wrap">
+      <label class="toggle"><input type="checkbox" id="showTrail" checked><span class="slider"></span></label>
+      <span class="toggle-label">显示轨迹</span>
+    </div>
+    <div class="readout">
+      <h2 style="margin-top:4px">实时数据</h2>
+      <div class="readout-row"><span class="label">当前角度 θ</span><span class="value val-cyan" id="rAngle">0.0°</span></div>
+      <div class="readout-row"><span class="label">角速度 ω</span><span class="value val-green" id="rOmega">0.00 rad/s</span></div>
+      <div class="readout-row"><span class="label">周期 T</span><span class="value val-purple" id="rPeriod">— s</span></div>
+      <div class="readout-row"><span class="label">动能 E<sub>k</sub></span><span class="value val-yellow" id="rKE">0.00 J</span></div>
+      <div class="readout-row"><span class="label">势能 E<sub>p</sub></span><span class="value val-orange" id="rPE">0.00 J</span></div>
+      <div class="readout-row"><span class="label">总能量 E</span><span class="value val-red" id="rTE">0.00 J</span></div>
+      <div class="readout-row"><span class="label">模拟时间</span><span class="value" id="rTime" style="color:var(--text)">0.00 s</span></div>
+    </div>
+  </div>
+</div>
+<script>
+// DOM
+const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
+const playBtn=document.getElementById('playBtn'),resetBtn=document.getElementById('resetBtn');
+const lenSlider=document.getElementById('lenSlider'),angSlider=document.getElementById('angSlider');
+const gravSlider=document.getElementById('gravSlider'),dampSlider=document.getElementById('dampSlider');
+const speedSlider=document.getElementById('speedSlider');
+const showApprox=document.getElementById('showApprox'),showEnergy=document.getElementById('showEnergy'),showTrail=document.getElementById('showTrail');
+const rAngle=document.getElementById('rAngle'),rOmega=document.getElementById('rOmega'),rPeriod=document.getElementById('rPeriod');
+const rKE=document.getElementById('rKE'),rPE=document.getElementById('rPE'),rTE=document.getElementById('rTE'),rTime=document.getElementById('rTime');
+const lenVal=document.getElementById('lenVal'),angVal=document.getElementById('angVal'),gravVal=document.getElementById('gravVal');
+const dampVal=document.getElementById('dampVal'),speedVal=document.getElementById('speedVal');
+
+const P={length:2,angle:45,gravity:9.81,damping:0,speed:1};
+let S={theta:0,omega:0,time:0,running:false};
+let AS={theta:0,omega:0};
+const trail=[],approxTrail=[];
+const MAX_TRAIL=500;
+let periodStart=0,lastSign=1,measuredPeriod=null;
+let W,H,cx,py,sc;
+
+function resize(){
+  const r=canvas.parentElement.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  W=r.width;H=r.height;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  cx=W/2;py=56;sc=Math.min(W,H)*0.12;
+}
+window.addEventListener('resize',resize);
+
+function getAccel(th,om){return-(P.gravity/P.length)*Math.sin(th)-P.damping*om}
+function getSAccel(th,om){return-(P.gravity/P.length)*th-P.damping*om}
+
+function update(dt){
+  if(!S.running)return;
+  let a=getAccel(S.theta,S.omega);
+  S.omega+=a*dt;S.theta+=S.omega*dt;
+  let aa=getSAccel(AS.theta,AS.omega);
+  AS.omega+=aa*dt;AS.theta+=AS.omega*dt;
+  S.time+=dt;
+  if(showTrail.checked){
+    let Lp=P.length*sc;
+    trail.push({x:cx+Lp*Math.sin(S.theta),y:py+Lp*Math.cos(S.theta)});
+    if(trail.length>MAX_TRAIL)trail.shift();
+    if(showApprox.checked){
+      approxTrail.push({x:cx+Lp*Math.sin(AS.theta),y:py+Lp*Math.cos(AS.theta)});
+      if(approxTrail.length>MAX_TRAIL)approxTrail.shift();
+    }
+  }
+  let ts=Math.sign(S.theta);
+  if(ts!==0&&ts!==lastSign){
+    if(periodStart>0)measuredPeriod=S.time-periodStart;
+    periodStart=S.time;lastSign=ts;
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(48,54,61,0.3)';ctx.lineWidth=1;
+  for(let x=40;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=40;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  const Lp=P.length*sc,bx=cx+Lp*Math.sin(S.theta),by=py+Lp*Math.cos(S.theta);
+  let ax,ay;if(showApprox.checked){ax=cx+Lp*Math.sin(AS.theta);ay=py+Lp*Math.cos(AS.theta)}
+  // Trails
+  if(showTrail.checked){
+    if(showApprox.checked&&approxTrail.length>1)
+      for(let i=1;i<approxTrail.length;i++){
+        let a=i/approxTrail.length*0.6;
+        ctx.strokeStyle=`rgba(63,185,80,${a})`;ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(approxTrail[i-1].x,approxTrail[i-1].y);ctx.lineTo(approxTrail[i].x,approxTrail[i].y);ctx.stroke();
+      }
+    if(trail.length>1)
+      for(let i=1;i<trail.length;i++){
+        let a=i/trail.length*0.8;
+        ctx.strokeStyle=`rgba(88,166,255,${a})`;ctx.lineWidth=2.5;
+        ctx.beginPath();ctx.moveTo(trail[i-1].x,trail[i-1].y);ctx.lineTo(trail[i].x,trail[i].y);ctx.stroke();
+      }
+  }
+  // Arc
+  ctx.strokeStyle='rgba(139,148,158,0.3)';ctx.lineWidth=1;ctx.setLineDash([4,6]);
+  ctx.beginPath();ctx.arc(cx,py,Lp,-Math.PI*.8,Math.PI*.8);ctx.stroke();ctx.setLineDash([]);
+  // String
+  ctx.strokeStyle='rgba(230,237,243,0.6)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(cx,py);ctx.lineTo(bx,by);ctx.stroke();
+  if(showApprox.checked){
+    ctx.strokeStyle='rgba(63,185,80,0.4)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(cx,py);ctx.lineTo(ax,ay);ctx.stroke();
+  }
+  // Pivot
+  ctx.fillStyle='#8b949e';ctx.beginPath();ctx.arc(cx,py,6,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(139,148,158,0.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,py,6,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='#21262d';ctx.fillRect(cx-30,py-10,60,8);
+  ctx.fillStyle='#30363d';ctx.fillRect(cx-25,py-14,50,4);
+  // Bob
+  const bR=Math.max(8,Math.min(22,10+P.length*3));
+  let g=ctx.createRadialGradient(bx-bR*.3,by-bR*.3,0,bx,by,bR);
+  g.addColorStop(0,'#58a6ff');g.addColorStop(1,'#1f6feb');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(bx,by,bR,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(88,166,255,0.4)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(bx,by,bR,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='#fff';ctx.font=Math.max(10,bR-4)+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('m',bx,by);
+  // Approx bob
+  if(showApprox.checked){
+    const aR=bR*.7;
+    g=ctx.createRadialGradient(ax-aR*.3,ay-aR*.3,0,ax,ay,aR);
+    g.addColorStop(0,'#3fb950');g.addColorStop(1,'#238636');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(ax,ay,aR,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font=Math.max(9,aR-3)+'px sans-serif';ctx.fillText('~',ax,ay);
+  }
+  // Energy bars
+  if(showEnergy.checked){
+    const bw=14,bm=Math.min(120,H*.2),bx2=W-50,by2=py+30;
+    const g2=P.gravity,L=P.length,m=1,h=L*(1-Math.cos(S.theta)),v=S.omega*L,KE=.5*m*v*v,PE=m*g2*h,TE=KE+PE,mE=Math.max(TE,.1);
+    ctx.font='11px sans-serif';ctx.textAlign='center';
+    const keH=KE/mE*bm;ctx.fillStyle='rgba(227,179,65,0.8)';ctx.fillRect(bx2,by2+bm-keH,bw,keH);
+    ctx.strokeStyle='rgba(227,179,65,0.3)';ctx.lineWidth=1;ctx.strokeRect(bx2,by2,bw,bm);
+    ctx.fillStyle='#e3b341';ctx.fillText('Ek',bx2+bw/2,by2+bm+14);
+    const peH=PE/mE*bm;ctx.fillStyle='rgba(210,153,34,0.8)';ctx.fillRect(bx2+bw+6,by2+bm-peH,bw,peH);
+    ctx.strokeStyle='rgba(210,153,34,0.3)';ctx.strokeRect(bx2+bw+6,by2,bw,bm);
+    ctx.fillStyle='#d29922';ctx.fillText('Ep',bx2+bw+6+bw/2,by2+bm+14);
+    const teH=TE/mE*bm;ctx.fillStyle='rgba(248,81,73,0.8)';ctx.fillRect(bx2+2*(bw+6),by2+bm-teH,bw,teH);
+    ctx.strokeStyle='rgba(248,81,73,0.3)';ctx.strokeRect(bx2+2*(bw+6),by2,bw,bm);
+    ctx.fillStyle='#f85149';ctx.fillText('E',bx2+2*(bw+6)+bw/2,by2+bm+14);
+  }
+  // Angle indicator
+  ctx.strokeStyle='rgba(163,113,247,0.4)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(cx,py,30,Math.PI,Math.PI+S.theta,S.theta<0);ctx.stroke();
+  ctx.fillStyle='rgba(163,113,247,0.6)';ctx.font='12px sans-serif';ctx.textAlign='left';
+  ctx.fillText('θ',cx+36,py-4);
+  // Labels
+  ctx.fillStyle='rgba(139,148,158,0.5)';ctx.font='12px sans-serif';ctx.textAlign='left';
+  ctx.fillText('L = '+P.length.toFixed(1)+' m',12,H-12);
+  ctx.fillStyle='#58a6ff';ctx.fillRect(12,16,12,3);
+  ctx.fillStyle='rgba(139,148,158,0.6)';ctx.font='11px sans-serif';ctx.fillText('精确解',28,20);
+  if(showApprox.checked){
+    ctx.fillStyle='#3fb950';ctx.fillRect(12,32,12,3);
+    ctx.fillStyle='rgba(139,148,158,0.6)';ctx.fillText('小角近似',28,36);
+  }
+}
+
+function resetSim(){
+  const t0=P.angle*Math.PI/180;
+  S.theta=t0;S.omega=0;S.time=0;
+  AS.theta=t0;AS.omega=0;
+  trail.length=0;approxTrail.length=0;
+  measuredPeriod=null;periodStart=0;lastSign=Math.sign(t0);
+}
+function togglePlay(){
+  S.running=!S.running;
+  playBtn.textContent=S.running?'⏸ 暂停':'▶ 运行';
+  playBtn.classList.toggle('active',S.running);
+}
+playBtn.addEventListener('click',togglePlay);
+resetBtn.addEventListener('click',resetSim);
+lenSlider.addEventListener('input',()=>{P.length=+lenSlider.value;lenVal.textContent=P.length.toFixed(1);resetSim()});
+angSlider.addEventListener('input',()=>{P.angle=+angSlider.value;angVal.textContent=P.angle;resetSim()});
+gravSlider.addEventListener('input',()=>{P.gravity=+gravSlider.value;gravVal.textContent=P.gravity.toFixed(1)});
+dampSlider.addEventListener('input',()=>{P.damping=+dampSlider.value;dampVal.textContent=P.damping.toFixed(2)});
+speedSlider.addEventListener('input',()=>{P.speed=+speedSlider.value;speedVal.textContent=P.speed.toFixed(1)});
+showTrail.addEventListener('change',()=>{if(!showTrail.checked){trail.length=0;approxTrail.length=0}});
+document.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Space'){e.preventDefault();togglePlay()}if(e.key==='r'||e.key==='R')resetSim()});
+
+function updateReadouts(){
+  const g=P.gravity,L=P.length,m=1,th=S.theta,om=S.omega;
+  const h=L*(1-Math.cos(th)),v=om*L,KE=.5*m*v*v,PE=m*g*h,TE=KE+PE;
+  rAngle.textContent=(th*180/Math.PI).toFixed(1)+'°';
+  rOmega.textContent=om.toFixed(2)+' rad/s';
+  rPeriod.textContent=measuredPeriod?measuredPeriod.toFixed(2)+' s':'— s';
+  rKE.textContent=KE.toFixed(3)+' J';rPE.textContent=PE.toFixed(3)+' J';
+  rTE.textContent=TE.toFixed(3)+' J';rTime.textContent=S.time.toFixed(2)+' s';
+}
+
+let lastTime=0;
+const FIXED_DT=1/60;
+function loop(t){
+  requestAnimationFrame(loop);
+  if(lastTime===0)lastTime=t;
+  let ft=(t-lastTime)/1000;lastTime=t;
+  if(ft>.1)ft=.1;
+  const dt=FIXED_DT,steps=Math.ceil(ft*P.speed/dt);
+  for(let i=0;i<steps;i++)update(dt);
+  updateReadouts();draw();
+}
+
+resize();resetSim();loop(0);
+
+// Drag bob
+let dragging=false;
+canvas.addEventListener('mousedown',e=>{
+  if(S.running)return;
+  const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  const Lp=P.length*sc,dist=Math.hypot(mx-(cx+Lp*Math.sin(S.theta)),my-(py+Lp*Math.cos(S.theta)));
+  if(dist<30)dragging=true;
+});
+canvas.addEventListener('mousemove',e=>{
+  if(!dragging)return;
+  const r=canvas.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  let nt=Math.atan2(mx-cx,my-py);nt=Math.max(-Math.PI/2,Math.min(Math.PI/2,nt));
+  S.theta=nt;AS.theta=nt;S.omega=0;AS.omega=0;trail.length=0;approxTrail.length=0;
+});
+canvas.addEventListener('mouseup',()=>{dragging=false});
+canvas.addEventListener('mouseleave',()=>{dragging=false});
+</script>
+</body>
+</html>
