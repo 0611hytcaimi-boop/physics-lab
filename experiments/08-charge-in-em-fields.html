@@ -1,0 +1,648 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>电磁场中的带电粒子运动 | 磁场范围扩大版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body {
+            background: linear-gradient(135deg, #0b1120 0%, #111827 100%);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .back-btn{
+  color:var(--text2);
+  text-decoration:none;
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:6px;
+  transition:all .2s;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 99;
+}
+.back-btn:hover{
+  color:var(--text);
+  background:var(--bg3);
+}
+.back-btn::before{
+  content:'';
+  display:inline-block;
+  width:8px;
+  height:8px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(45deg);
+}
+        .simulation-dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            background: rgba(18, 25, 45, 0.65);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            overflow: hidden;
+            width: 1400px;
+            max-width: 98vw;
+            border: 1px solid rgba(72, 187, 255, 0.2);
+        }
+        .control-panel {
+            width: 310px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            padding: 22px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-right: 1px solid rgba(56, 189, 248, 0.25);
+            overflow-y: auto;
+            max-height: 85vh;
+        }
+        .panel-header { text-align: center; margin-bottom: 4px; }
+        .panel-header h2 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #a5f3ff, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .param-group {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 1.5rem;
+            padding: 14px 16px;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+        }
+        .param-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #e2e8f0;
+            font-size: 0.8rem;
+        }
+        .param-value { color: #38bdf8; font-family: monospace; font-weight: bold; }
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #1e293b;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #38bdf8;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px #38bdf8;
+            border: 1px solid white;
+        }
+        button {
+            background: linear-gradient(95deg, #1e293b, #0f172a);
+            border: 1px solid #334155;
+            padding: 9px 0;
+            border-radius: 40px;
+            font-weight: 600;
+            color: #f1f5f9;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 6px;
+        }
+        button:hover {
+            background: linear-gradient(95deg, #2d3a5e, #1e2a44);
+            border-color: #3b82f6;
+        }
+        .theory-card {
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 1.4rem;
+            padding: 12px 14px;
+            border: 1px solid #2d5a7e;
+        }
+        .theory-header {
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+            color: #b9e2ff;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .theory-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            max-height: 0;
+            font-size: 0.7rem;
+            color: #cbd5f0;
+        }
+        .theory-content.open { max-height: 520px; margin-top: 12px; }
+        .formula {
+            background: #0a0f1c;
+            padding: 6px 10px;
+            border-radius: 14px;
+            margin: 8px 0;
+            font-size: 0.7rem;
+            color: #facc15;
+            border-left: 3px solid #3b82f6;
+        }
+        .canvas-area { flex: 1; background: #030712; }
+        canvas {
+            display: block;
+            width: 100%;
+            background: radial-gradient(circle at 20% 30%, #091122, #020617);
+            cursor: crosshair;
+        }
+        .canvas-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid #2d3a5e;
+            font-size: 0.75rem;
+            color: #b9d0f0;
+        }
+        .legend-badge { display: flex; gap: 20px; }
+        .particle-dot {
+            width: 12px; height: 12px;
+            background: #f97316;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #f97316;
+        }
+        .warning-note {
+            background: #7c2d1220;
+            border-left: 3px solid #f97316;
+            padding: 6px 10px;
+            margin-top: 8px;
+            font-size: 0.65rem;
+            color: #facc15;
+        }
+        .radius-display {
+            background: #0f172a;
+            border-radius: 20px;
+            padding: 8px 12px;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.75rem;
+            color: #4ade80;
+        }
+        @media (max-width: 850px) {
+            .simulation-dashboard { flex-direction: column; }
+            .control-panel { width: 100%; max-height: 50vh; flex-direction: row; flex-wrap: wrap; gap: 12px; }
+        }
+    </style>
+</head>
+<body>
+<div class="simulation-dashboard">
+  <a href="../index.html" class="back-btn">返回</a>
+    <div class="control-panel">
+        <div class="panel-header">
+            <h2>⚡ 电磁场中的粒子</h2>
+            <p>洛伦兹力 · 磁场力不改变速率 · 半径变化范围扩大</p>
+        </div>
+
+        <div class="param-group">
+            <div class="param-label">
+                <span>🧲 磁场 B<sub>z</sub> <span style="color:#facc15; font-size:0.7rem;">(范围 ±15)</span></span>
+                <span class="param-value" id="bzValue">0.00</span>
+            </div>
+            <input type="range" id="bzSlider" min="-15.0" max="15.0" step="0.1" value="2.5">
+            <div class="radius-display" id="radiusDisplay">
+                📐 当前理论回旋半径: <span id="radiusHint">—</span> 像素
+            </div>
+            <div class="warning-note">
+                🔬 物理事实：磁场力只改变速度方向，不改变速率。<br>
+                ⚡ 调节B：半径 R = mv/(|q|B) 反比变化 → B越大，转弯越急（半径越小）
+            </div>
+        </div>
+
+        <div class="param-group">
+            <div class="param-label">
+                <span>⚡ 电场 E<sub>x</sub></span>
+                <span class="param-value" id="exValue">0.00</span>
+            </div>
+            <input type="range" id="exSlider" min="-8.0" max="8.0" step="0.05" value="0.0">
+            <div class="param-label" style="margin-top:8px">
+                <span>⬆️ 电场 E<sub>y</sub></span>
+                <span class="param-value" id="eyValue">0.00</span>
+            </div>
+            <input type="range" id="eySlider" min="-8.0" max="8.0" step="0.05" value="0.5">
+        </div>
+
+        <div class="param-group">
+            <div class="param-label">
+                <span>🎯 初速度 v<sub>x</sub></span>
+                <span class="param-value" id="vxValue">2.00</span>
+            </div>
+            <input type="range" id="vxSlider" min="-12.0" max="12.0" step="0.1" value="4.0">
+            <div class="param-label" style="margin-top:8px">
+                <span>📈 初速度 v<sub>y</sub></span>
+                <span class="param-value" id="vyValue">1.00</span>
+            </div>
+            <input type="range" id="vySlider" min="-12.0" max="12.0" step="0.1" value="0.0">
+            <div class="warning-note" style="margin-top:8px">
+                💡 速度越大 → 回旋半径越大 → 轨迹越舒展
+            </div>
+        </div>
+
+        <div class="param-group">
+            <button id="resetTrajBtn">🔄 重置轨迹 & 粒子</button>
+            <button id="clearTrailBtn">🗑️ 清除尾迹</button>
+            <button id="toggleFieldBtn">⏸️ 暂停运动</button>
+        </div>
+
+        <div class="theory-card">
+            <div class="theory-header" id="theoryHeader">
+                <span>📖 实验原理与核心公式</span>
+                <span id="toggleIcon">▼</span>
+            </div>
+            <div class="theory-content" id="theoryContent">
+                <p><strong>🔍 实验目的</strong><br>观察带电粒子在电磁场中的运动轨迹，验证磁场力不改变速率。</p>
+                <div class="formula">
+                    <strong>① 洛伦兹力</strong><br>
+                    F = q(E + v × B)
+                </div>
+                <div class="formula">
+                    <strong>② 关键特性</strong><br>
+                    电场力 → 改变速度大小和方向<br>
+                    磁场力 → 只改变速度方向，不改变速率 ✅
+                </div>
+                <div class="formula">
+                    <strong>③ 回旋半径公式</strong><br>
+                    R = mv / (|q|·B)<br>
+                    本仿真中 m/q = 1/1.8，所以 R = v / (1.8 × |B|)
+                </div>
+                <div class="formula">
+                    <strong>④ 二维分量</strong><br>
+                    aₓ = (q/m)·(Eₓ + v_y·B_z)<br>
+                    a_y = (q/m)·(E_y - v_x·B_z)
+                </div>
+                <p><strong>🧠 验证磁场力特性</strong><br>
+                调节磁场B：右上角速度数值应保持不变（只改变轨迹形状）<br>
+                半径与B成反比：B越大，转弯越急，半径越小
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="canvas-area">
+        <div class="canvas-header">
+            <div>📈 带电粒子运动仿真 | 磁场范围 ±15 | RK4高精度积分</div>
+            <div class="legend-badge">
+                <span><div class="particle-dot"></div> 正电荷粒子</span>
+                <span>🧲 蓝色箭头: 电场方向</span>
+                <span>⊙/⊗: 磁场方向</span>
+            </div>
+        </div>
+        <canvas id="emCanvas" width="1000" height="600" style="width:100%; aspect-ratio:1000/600"></canvas>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ========== 物理参数 ==========
+        const DT = 0.022;           // 仿真步长
+        const Q_OVER_M = 1.8;       // 荷质比 q/m (固定)
+        
+        // 画布
+        const canvas = document.getElementById('emCanvas');
+        const ctx = canvas.getContext('2d');
+        let width = 1000, height = 600;
+        canvas.width = width;
+        canvas.height = height;
+
+        // ========== 电磁场参数（范围扩大） ==========
+        let Bz = 2.5;       // 磁场范围 ±15
+        let Ex = 0.0;
+        let Ey = 0.5;
+
+        // ========== 粒子状态 ==========
+        let px = width/2, py = height/2;
+        let vx = 4.0, vy = 0.0;
+        let trail = [];
+        const MAX_TRAIL = 600;
+        let isRunning = true;
+        
+        // ========== UI 元素 ==========
+        const bzSlider = document.getElementById('bzSlider');
+        const bzValue = document.getElementById('bzValue');
+        const exSlider = document.getElementById('exSlider');
+        const exValue = document.getElementById('exValue');
+        const eySlider = document.getElementById('eySlider');
+        const eyValue = document.getElementById('eyValue');
+        const vxSlider = document.getElementById('vxSlider');
+        const vxValue = document.getElementById('vxValue');
+        const vySlider = document.getElementById('vySlider');
+        const vyValue = document.getElementById('vyValue');
+        const radiusHintSpan = document.getElementById('radiusHint');
+        
+        // 折叠卡片
+        const theoryContent = document.getElementById('theoryContent');
+        const toggleIcon = document.getElementById('toggleIcon');
+        document.getElementById('theoryHeader').addEventListener('click', () => {
+            const isOpen = theoryContent.classList.contains('open');
+            theoryContent.classList.toggle('open');
+            toggleIcon.innerText = isOpen ? '▼' : '▲';
+        });
+        theoryContent.classList.add('open');
+        toggleIcon.innerText = '▲';
+
+        // 更新理论回旋半径
+        function updateRadiusDisplay() {
+            let vMag = Math.hypot(vx, vy);
+            let bMag = Math.abs(Bz);
+            if(bMag > 0.02) {
+                // R = mv/(|q|B) = v / ((q/m)*|B|)
+                let radius = vMag / (Q_OVER_M * bMag);
+                radiusHintSpan.innerText = radius.toFixed(1);
+            } else {
+                radiusHintSpan.innerText = "∞ (直线)";
+            }
+        }
+
+        function updateUI() {
+            bzSlider.value = Bz.toFixed(3);
+            bzValue.innerText = Bz.toFixed(2);
+            exSlider.value = Ex.toFixed(3);
+            exValue.innerText = Ex.toFixed(2);
+            eySlider.value = Ey.toFixed(3);
+            eyValue.innerText = Ey.toFixed(2);
+            vxSlider.value = vx.toFixed(2);
+            vxValue.innerText = vx.toFixed(2);
+            vySlider.value = vy.toFixed(2);
+            vyValue.innerText = vy.toFixed(2);
+            updateRadiusDisplay();
+        }
+
+        // 加速度计算（基于当前场和速度）
+        function computeAcceleration(vxIn, vyIn) {
+            return {
+                ax: Q_OVER_M * (Ex + vyIn * Bz),
+                ay: Q_OVER_M * (Ey - vxIn * Bz)
+            };
+        }
+
+        // RK4积分（高精度）
+        function rk4Step() {
+            function deriv(state) {
+                let [x, y, vx_, vy_] = state;
+                let { ax, ay } = computeAcceleration(vx_, vy_);
+                return [vx_, vy_, ax, ay];
+            }
+            let state = [px, py, vx, vy];
+            let k1 = deriv(state);
+            let state2 = [px + k1[0]*DT/2, py + k1[1]*DT/2, vx + k1[2]*DT/2, vy + k1[3]*DT/2];
+            let k2 = deriv(state2);
+            let state3 = [px + k2[0]*DT/2, py + k2[1]*DT/2, vx + k2[2]*DT/2, vy + k2[3]*DT/2];
+            let k3 = deriv(state3);
+            let state4 = [px + k3[0]*DT, py + k3[1]*DT, vx + k3[2]*DT, vy + k3[3]*DT];
+            let k4 = deriv(state4);
+            
+            px = px + (k1[0] + 2*k2[0] + 2*k3[0] + k4[0]) * DT / 6;
+            py = py + (k1[1] + 2*k2[1] + 2*k3[1] + k4[1]) * DT / 6;
+            vx = vx + (k1[2] + 2*k2[2] + 2*k3[2] + k4[2]) * DT / 6;
+            vy = vy + (k1[3] + 2*k2[3] + 2*k3[3] + k4[3]) * DT / 6;
+            
+            // 边界处理：只拉回位置，不改变速度大小（保证磁场力不改变速率）
+            const margin = 50;
+            if(px < -margin) px = -margin;
+            if(px > width + margin) px = width + margin;
+            if(py < -margin) py = -margin;
+            if(py > height + margin) py = height + margin;
+        }
+
+        function addTrailPoint() {
+            trail.push({ x: px, y: py });
+            if(trail.length > MAX_TRAIL) trail.shift();
+        }
+
+        function resetParticle() {
+            px = width/2;
+            py = height/2;
+            vx = parseFloat(vxSlider.value);
+            vy = parseFloat(vySlider.value);
+            trail = [];
+            addTrailPoint();
+            updateUI();
+        }
+        
+        function clearTrail() {
+            trail = [];
+            addTrailPoint();
+        }
+
+        // ========== 绘图函数 ==========
+        function drawElectricField() {
+            const step = 48;
+            ctx.save();
+            ctx.globalAlpha = 0.5;
+            for(let i = step; i < width; i += step) {
+                for(let j = step; j < height; j += step) {
+                    let mag = Math.hypot(Ex, Ey);
+                    if(mag < 0.02) continue;
+                    let dirX = Ex / mag, dirY = Ey / mag;
+                    let len = Math.min(24, mag * 5 + 10);
+                    let startX = i - dirX * (len/2);
+                    let startY = j - dirY * (len/2);
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(startX + dirX * len, startY + dirY * len);
+                    ctx.strokeStyle = '#60a5fa';
+                    ctx.lineWidth = 1.6;
+                    ctx.stroke();
+                    let angle = Math.atan2(dirY, dirX);
+                    let arrowX = startX + dirX * len;
+                    let arrowY = startY + dirY * len;
+                    ctx.beginPath();
+                    ctx.moveTo(arrowX, arrowY);
+                    ctx.lineTo(arrowX + Math.cos(angle+0.8)*6, arrowY + Math.sin(angle+0.8)*6);
+                    ctx.lineTo(arrowX + Math.cos(angle-0.8)*6, arrowY + Math.sin(angle-0.8)*6);
+                    ctx.fillStyle = '#7aaef0';
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawMagneticHints() {
+            ctx.save();
+            for(let i = 80; i < width; i += 100) {
+                for(let j = 80; j < height; j += 100) {
+                    if(Math.abs(Bz) > 0.05) {
+                        ctx.beginPath();
+                        ctx.arc(i, j, 12, 0, Math.PI*2);
+                        ctx.fillStyle = "#0891b240";
+                        ctx.fill();
+                        ctx.fillStyle = Bz > 0 ? "#67e8f9" : "#f472b6";
+                        ctx.font = "20px monospace";
+                        ctx.fillText(Bz>0 ? "⊙" : "⊗", i-8, j+8);
+                        ctx.font = "10px monospace";
+                        ctx.fillStyle = "#94a3b8";
+                        ctx.fillText(Math.abs(Bz).toFixed(1), i-5, j-6);
+                    }
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawTrail() {
+            if(trail.length < 2) return;
+            for(let i=0; i<trail.length-1; i++) {
+                let alpha = 0.15 + (i/trail.length) * 0.6;
+                ctx.beginPath();
+                ctx.moveTo(trail[i].x, trail[i].y);
+                ctx.lineTo(trail[i+1].x, trail[i+1].y);
+                ctx.strokeStyle = `rgba(249, 115, 22, ${alpha})`;
+                ctx.lineWidth = 2.2;
+                ctx.stroke();
+            }
+        }
+
+        function drawParticle() {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#f97316";
+            ctx.beginPath();
+            ctx.arc(px, py, 11, 0, Math.PI*2);
+            let grad = ctx.createRadialGradient(px-3, py-3, 3, px, py, 15);
+            grad.addColorStop(0, '#ffb347');
+            grad.addColorStop(1, '#f25722');
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(px, py, 11, 0, Math.PI*2);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+            ctx.fillStyle = "white";
+            ctx.font = "bold 18px 'Segoe UI'";
+            ctx.fillText("+", px-6, py+7);
+            ctx.shadowBlur = 0;
+            
+            // 绘制速度矢量箭头
+            let vmag = Math.hypot(vx, vy);
+            if(vmag > 0.3) {
+                let normX = vx/vmag, normY = vy/vmag;
+                let arrowLen = Math.min(42, 16 + vmag*2.0);
+                ctx.beginPath();
+                ctx.moveTo(px, py);
+                ctx.lineTo(px + normX*arrowLen, py + normY*arrowLen);
+                ctx.strokeStyle = "#facc15";
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+                let ang = Math.atan2(normY, normX);
+                ctx.beginPath();
+                ctx.moveTo(px + normX*arrowLen, py + normY*arrowLen);
+                ctx.lineTo(px + normX*arrowLen - Math.cos(ang-0.7)*7, py + normY*arrowLen - Math.sin(ang-0.7)*7);
+                ctx.lineTo(px + normX*arrowLen - Math.cos(ang+0.7)*7, py + normY*arrowLen - Math.sin(ang+0.7)*7);
+                ctx.fillStyle = "#ffb347";
+                ctx.fill();
+            }
+        }
+
+        function drawGrid() {
+            ctx.save();
+            ctx.globalAlpha = 0.12;
+            ctx.strokeStyle = "#3b82f6";
+            ctx.lineWidth = 0.5;
+            for(let i=0; i<width; i+=50){
+                ctx.beginPath();
+                ctx.moveTo(i,0); ctx.lineTo(i,height); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0,i%height); ctx.lineTo(width,i%height); ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        let lastSpeedDisplay = 0;
+        function render() {
+            ctx.clearRect(0, 0, width, height);
+            drawGrid();
+            drawElectricField();
+            drawMagneticHints();
+            drawTrail();
+            drawParticle();
+            
+            // 信息显示
+            ctx.font = "13px 'JetBrains Mono', monospace";
+            ctx.fillStyle = "#bbd4ff";
+            ctx.fillText(`B = ${Bz.toFixed(2)} T   E = (${Ex.toFixed(2)}, ${Ey.toFixed(2)})`, 20, 30);
+            
+            let currentSpeed = Math.hypot(vx, vy);
+            // 速度显示：绿色表示速率稳定（验证磁场力不改变速率）
+            let speedDiff = Math.abs(currentSpeed - lastSpeedDisplay);
+            ctx.fillStyle = (speedDiff < 0.005) ? "#4ade80" : "#facc15";
+            ctx.fillText(`v = (${vx.toFixed(2)}, ${vy.toFixed(2)}) | speed = ${currentSpeed.toFixed(5)}`, 20, 55);
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "11px monospace";
+            ctx.fillText("✅ 磁场力只改变方向，不改变速率 → 调节B时 speed 应保持不变", 20, 78);
+            
+            // 显示当前半径信息
+            let vMag = currentSpeed;
+            let bMag = Math.abs(Bz);
+            if(bMag > 0.02) {
+                let radius = vMag / (Q_OVER_M * bMag);
+                ctx.fillStyle = "#4ade80";
+                ctx.fillText(`📐 当前实际回旋半径 ≈ ${radius.toFixed(1)} px (B越大半径越小)`, 20, 100);
+            } else {
+                ctx.fillStyle = "#facc15";
+                ctx.fillText(`📐 磁场为零 → 直线运动或抛物线`, 20, 100);
+            }
+            
+            lastSpeedDisplay = currentSpeed;
+        }
+
+        function updateSimulation() {
+            if(isRunning) {
+                rk4Step();
+                addTrailPoint();
+                // 极端飞出重置（极少发生）
+                if(Math.abs(px) > 2000 || Math.abs(py) > 2000) resetParticle();
+            }
+        }
+
+        function animate() {
+            updateSimulation();
+            render();
+            requestAnimationFrame(animate);
+        }
+        
+        function bindEvents() {
+            // 磁场滑块：范围 ±15，只改变场强，不改变速度
+            bzSlider.addEventListener('input', (e) => { 
+                Bz = parseFloat(e.target.value); 
+                bzValue.innerText = Bz.toFixed(2); 
+                updateRadiusDisplay();
+            });
+            exSlider.addEventListener('input', (e) => { Ex = parseFloat(e.target.value); exValue.innerText = Ex.toFixed(2); });
+            eySlider.addEventListener('input', (e) => { Ey = parseFloat(e.target.value); eyValue.innerText = Ey.toFixed(2); });
+            
+            // 速度滑块：修改速度并重置粒子
+            vxSlider.addEventListener('input', (e) => { vx = parseFloat(e.target.value); vxValue.innerText = vx.toFixed(2); resetParticle(); });
+            vySlider.addEventListener('input', (e) => { vy = parseFloat(e.target.value); vyValue.innerText = vy.toFixed(2); resetParticle(); });
+            
+            document.getElementById('resetTrajBtn').addEventListener('click', resetParticle);
+            document.getElementById('clearTrailBtn').addEventListener('click', clearTrail);
+            document.getElementById('toggleFieldBtn').addEventListener('click', () => {
+                isRunning = !isRunning;
+                document.getElementById('toggleFieldBtn').innerText = isRunning ? "⏸️ 暂停运动" : "▶️ 启动运动";
+            });
+            canvas.addEventListener('dblclick', resetParticle);
+        }
+        
+        function init() {
+            bindEvents();
+            resetParticle();
+            animate();
+        }
+        init();
+    })();
+</script>
+</body>
+</html>
